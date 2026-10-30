@@ -8,6 +8,7 @@ require (
 	arion.local/core v0.0.0
 	arion.local/models v0.0.0
 	github.com/AstraFoundry/republic v0.0.0-20261025172537-6e72bf51fb52
+	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/ebitengine/purego v0.11.1
 	github.com/egoist/mygo v0.4.6
 	github.com/gen2brain/malgo v0.11.26
@@ -15,8 +16,10 @@ require (
 )
 
 require (
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-text/typesetting v0.3.5 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
+	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 )

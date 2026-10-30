@@ -35,7 +35,10 @@
     "keyboard:vocabulary:check": "node scripts/test-ime-publisher.mjs --vocabulary",
     "keyboard:verify": "node scripts/verify-keyboard-bundle.mjs",
     "keyboard:shared:check": "node scripts/check-shared-keyboard.mjs",
-    "keyboard:windows:check": "node scripts/check-windows-keyboard.mjs"
+    "keyboard:windows:check": "node scripts/check-windows-keyboard.mjs",
+    "shadowinput:check": "node scripts/shadowinput.mjs check",
+    "shadowinput:dev": "node scripts/shadowinput.mjs dev",
+    "shadowinput:build": "node scripts/shadowinput.mjs build"
   },
   "engines": {
     "node": ">=20.0.0"

@@ -1,3 +1,30 @@
+# shadowinput
+
+Keyboard-first AI writing for **macOS and Windows**, built with Go + MyGo and based on [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion).
+
+[English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
+
+- Polish, translate, rewrite and continue a draft with a native desktop editor.
+- Sign in with ChatGPT to request eligible plan usage, with encrypted local credential storage and account-specific model discovery.
+- Copy text, press **Cmd/Ctrl+Shift+J**, generate, review, then copy or paste the completed result back.
+- English and Simplified Chinese UI; separate app settings and credentials; no microphone or speech-model setup in the shadowinput entry point.
+
+**Development preview:** local tests, a macOS arm64 build and a Windows x64 cross-build pass. Real ChatGPT account authorization and inference, native Windows behavior and external-editor delivery still require acceptance testing. Inline completion, direct selection capture, change comparison and personal style profiles are proposed features, not shipped functionality. No signed installer or binary release is available.
+
+```sh
+node scripts/shadowinput.mjs check
+node scripts/shadowinput.mjs dev
+node scripts/shadowinput.mjs build macos
+node scripts/shadowinput.mjs build windows
+```
+
+See [project setup and verification limits](docs/project/shadowinput.md), [writing requirements](specs/011-writing.md), and [WeType comparison and priorities](docs/research/shadowinput-wetype.md). Prerequisites and platform build requirements are documented in the project setup.
+
+Distributed under [AGPL-3.0](LICENSE), retaining Arion's copyright and third-party notices. The documentation below describes upstream Arion and does not establish feature support in shadowinput.
+
+<details>
+<summary>Upstream Arion documentation</summary>
+
 <div align="center">
 
 # Arion
@@ -103,3 +130,5 @@ Repository ownership and internal evidence are documented in [the two-repository
 ## License
 
 Arion is developed by [AstraFoundry](https://github.com/AstraFoundry) and licensed under [AGPL-3.0](LICENSE) ([ADR 009](docs/decisions/009-agpl-license.md)). Follow [@AstraFoundry on X](https://x.com/AstraFoundry), join the community on [Discord](https://discord.com/invite/72kh465mMm) or [Feishu](https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=640t6cde-d38e-4a81-875b-7799e44b77ae), and report bugs in [GitHub Issues](https://github.com/AstraFoundry/Arion/issues).
+
+</details>

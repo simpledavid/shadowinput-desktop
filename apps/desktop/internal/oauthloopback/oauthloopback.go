@@ -19,9 +19,10 @@ import (
 
 // Callback is the redirect's query.
 type Callback struct {
-	State string
-	Code  string
-	Error string
+	State    string
+	Code     string
+	Error    string
+	ClientID string
 }
 
 // Server serves one callback.
@@ -51,7 +52,7 @@ func Start(ctx context.Context, addr, path string, page func() []byte) (*Server,
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET "+path, func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
-		cb := Callback{State: q.Get("state"), Code: q.Get("code"), Error: q.Get("error")}
+		cb := Callback{State: q.Get("state"), Code: q.Get("code"), Error: q.Get("error"), ClientID: q.Get("client_id")}
 		select {
 		case s.ch <- cb:
 		default:

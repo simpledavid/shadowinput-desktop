@@ -24,3 +24,5 @@ Jev-style local candidate ranking is explicitly requested. [Research](../docs/re
 ## Traceability
 
 Each acceptance scenario has a stable ID. New tests and task handoffs cite these IDs. An unchecked task is not an implemented feature. Changes to privacy defaults, input ownership or wire compatibility require an ADR and updated acceptance criteria.
+
+- [011 Keyboard-first writing](011-writing.md) — shadowinput derivative requirements.

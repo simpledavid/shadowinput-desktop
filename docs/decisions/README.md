@@ -58,3 +58,5 @@ decisions/
   001-use-uuid-for-ids.md
   002-choose-postgresql.md
 ```
+
+- [036 Independent shadowinput runtime](036-shadowinput-runtime.md).

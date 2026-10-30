@@ -1,3 +1,30 @@
+# shadowinput
+
+**macOS と Windows** 向けのキーボード中心の AI ライティングツールです。Go + MyGo を使用し、[AstraFoundry/Arion](https://github.com/AstraFoundry/Arion) を基に開発しています。
+
+[English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
+
+- ネイティブのデスクトップエディターで推敲、翻訳、書き換え、続きを生成します。
+- ChatGPT にサインインして対象プランの利用許可を取得します。認証情報はローカルで暗号化し、モデルはアカウントの利用可能リストから選択します。
+- テキストをコピーし、**Cmd/Ctrl+Shift+J** で開き、生成結果を確認してからコピーまたは貼り付けます。
+- UI は英語と簡体字中国語に対応。設定と認証情報は独立しており、shadowinput の起動にはマイクや音声モデルの準備は不要です。
+
+**開発プレビュー：**ローカルテスト、macOS arm64 ビルド、Windows x64 クロスビルドは成功しています。実際の ChatGPT 認証と推論、Windows 上での動作、外部エディターへの貼り付けは引き続き検証が必要です。インライン補完、選択範囲の直接取得、変更比較、個人スタイルは提案段階で、未実装です。署名済みインストーラーやバイナリリリースはありません。
+
+```sh
+node scripts/shadowinput.mjs check
+node scripts/shadowinput.mjs dev
+node scripts/shadowinput.mjs build macos
+node scripts/shadowinput.mjs build windows
+```
+
+[設定と検証範囲](docs/project/shadowinput.md)、[ライティング要件](specs/011-writing.md)、[WeType 比較と優先順位](docs/research/shadowinput-wetype.md)を参照してください。開発環境と各 OS のビルド要件は設定ドキュメントに記載しています。
+
+[AGPL-3.0](LICENSE) で配布し、Arion の著作権および第三者の通知を保持します。以下は上流 Arion のドキュメントであり、shadowinput での全機能の対応を示すものではありません。
+
+<details>
+<summary>上流 Arion のドキュメント</summary>
+
 <div align="center">
 
 # Arion
@@ -103,3 +130,5 @@ make site-check     # マーケティングサイト (apps/site)：i18n、型、
 ## ライセンス
 
 Arion は [AstraFoundry](https://github.com/AstraFoundry) によって開発され、[AGPL-3.0](LICENSE)（[ADR 009](docs/decisions/009-agpl-license.md)）の下でライセンスされています。[X (@AstraFoundry)](https://x.com/AstraFoundry) のフォロー、[Discord](https://discord.com/invite/72kh465mMm) や [Feishu グループ](https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=640t6cde-d38e-4a81-875b-7799e44b77ae)への参加をお待ちしています。バグ報告は [GitHub Issues](https://github.com/AstraFoundry/Arion/issues) までお願いします。
+
+</details>

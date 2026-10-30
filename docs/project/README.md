@@ -50,3 +50,7 @@ See [specs](../../specs/README.md), [research](../research/README.md), [reposito
 [Product notifications](product-notifications.md) describes signed-in, OS-authorized account notices, bounded authenticated catchup and current-server action authorization.
 
 [Dictation shortcuts](dictation-shortcuts.md) describes custom combinations, platform keys, conflicts and their implementation history.
+
+## shadowinput derivative
+
+- [shadowinput](shadowinput.md) — keyboard-first native writing runtime and acceptance.

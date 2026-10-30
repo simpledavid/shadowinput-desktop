@@ -1,3 +1,30 @@
+# shadowinput
+
+面向 **macOS 和 Windows** 的键盘优先 AI 写作工具，使用 Go + MyGo，基于 [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion) 开发。
+
+[English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
+
+- 原生桌面编辑器，支持润色、翻译、改写和续写。
+- 使用 ChatGPT 登录并申请使用符合条件的套餐额度；凭据在本地加密保存，模型来自账户授权列表。
+- 复制文字，按 **Cmd/Ctrl+Shift+J** 唤起，生成并检查结果，再复制或粘贴完整结果。
+- 提供英文和简体中文界面，使用独立设置及凭据；shadowinput 入口无需麦克风或语音模型。
+
+**开发预览版：**本地测试、macOS arm64 构建和 Windows x64 交叉编译已通过。真实 ChatGPT 登录与推理、Windows 原生运行以及跨应用粘贴仍需验收。行内补全、直接获取选区、修改对比和个人风格属于规划功能，尚未实现。当前没有已签名安装包或二进制发布版本。
+
+```sh
+node scripts/shadowinput.mjs check
+node scripts/shadowinput.mjs dev
+node scripts/shadowinput.mjs build macos
+node scripts/shadowinput.mjs build windows
+```
+
+参见[项目配置与验证范围](docs/project/shadowinput.md)、[写作功能要求](specs/011-writing.md)及[微信输入法对标与优先级](docs/research/shadowinput-wetype.md)。开发环境和各平台构建要求见项目配置文档。
+
+采用 [AGPL-3.0](LICENSE)，保留 Arion 版权及第三方声明。下方文档介绍上游 Arion，不代表 shadowinput 已支持其中全部功能。
+
+<details>
+<summary>上游 Arion 文档</summary>
+
 <div align="center">
 
 # Arion
@@ -103,3 +130,5 @@ make site-check     # 宣传站点 (apps/site)：i18n、类型、lint、测试�
 ## 许可证
 
 Arion 由 [AstraFoundry](https://github.com/AstraFoundry) 开发，并基于 [AGPL-3.0](LICENSE) 许可证开源（[ADR 009](docs/decisions/009-agpl-license.md)）。欢迎在 [X (@AstraFoundry)](https://x.com/AstraFoundry) 关注我们，加入 [Discord](https://discord.com/invite/72kh465mMm) 或[飞书群](https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=640t6cde-d38e-4a81-875b-7799e44b77ae)交流，并在 [GitHub Issues](https://github.com/AstraFoundry/Arion/issues) 中反馈问题。
+
+</details>

@@ -6,6 +6,8 @@ Complete study files and raw results are versioned in the private [Arion evaluat
 
 Research separates **observed shipped artifacts**, **static inferences**, **vendor statements**, **Arion design choices**, and **unknowns**. Static symbols do not prove runtime execution or server behavior.
 
+- [shadowinput and WeType](shadowinput-wetype.md) — official desktop feature evidence, ChatGPT account differentiation, keyboard-writing priorities and proposed native evaluation.
+
 - [Update notifications and automatic installation](update-notifications.md) — open issues #12/#13, macOS/Windows registration, pinned Magpie update behavior, and staged installation/lifecycle safety proposal.
 
 - [Typeless](typeless.md) — installed Electron artifact and audio/context/delivery surfaces.
