@@ -2,6 +2,8 @@
 
 shadowinput is an AGPL-3.0 derivative of [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion), based on upstream commit `b33542061b4c70c7940676f21c2a9afb6e5f1e2a` (0.1.0-alpha.20). Original copyright, license, third-party notices, source history and the maintained MyGo snapshot are retained. The source repository is [simpledavid/shadowinput-desktop](https://github.com/simpledavid/shadowinput-desktop), with `main` as its publication branch. `origin` points to that repository and `upstream` to Arion. The repository name distinguishes this desktop project from the owner's separate ShadowInput browser extension; the product name remains shadowinput.
 
+Development and review follow the [ub-mode coding rules](../quality/ub-mode.md).
+
 ## Downloads
 
 The current downloadable development preview is [v0.1.0-preview.5](https://github.com/simpledavid/shadowinput-desktop/releases/tag/v0.1.0-preview.5). Use the DMG or EXE installer; portable ZIP archives remain available on the release page:
