@@ -57,7 +57,13 @@ credentials; it does not revoke the provider-side grant.
   and stream failures (including plan limits) lost their actual category. The
   parser now uses final message output only at `response.completed`, and the
   webpage card retains allowlisted failure reasons across the worker boundary.
-  Unknown raw messages/codes are not exposed. A real retry is still required.
+  Unknown raw messages/codes are not exposed. After reloading preview.3, the user
+  provided a real webpage screenshot showing
+  `subscription_sharing_usage_limit_exceeded`. This confirms a provider-enforced
+  usage limit for that request; it does not establish whether the limit is
+  plan-wide or application-specific, nor its reset time. The page stops new work
+  and cancels in-flight jobs. Repeated sign-in is not a recovery for this code.
+  Completed real translation remains pending available usage.
   Protocol references: [inference completion](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference)
   and [structured recovery](https://developers.openai.com/siwc/token-sharing-open-source/errors-and-recovery).
 - Pre-merge review reproduced and fixed three regressions: an old model request
