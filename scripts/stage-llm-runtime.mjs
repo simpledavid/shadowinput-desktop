@@ -1,10 +1,10 @@
 // Stage the pinned offline GGUF runtime and pipe worker for the selected platform.
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, chmodSync, writeFileSync } from 'node:fs';
+import { copyFileSync, readdirSync, existsSync, mkdirSync, readFileSync, rmSync, chmodSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pinnedFile } from './lib/pinned-file.mjs';
-import { verifyWindowsLLMPackage } from './lib/windows-pe.mjs';
+import { verifyWindowsLLMPackage, verifyWindowsPEDependencies } from './lib/windows-pe.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const desktop = path.join(root, 'apps', 'desktop');
@@ -26,18 +26,20 @@ if (platform === 'windows-amd64') {
   const archive = pinnedFile(spec.source);
   const work = path.join(root, '.workspace', 'local-rewrite');
   const source = path.join(work, 'llama.cpp');
-  const build = path.join(work, platform);
+  const cross = process.platform !== 'win32';
+  const build = path.join(work, cross ? `${platform}-cross` : platform);
   const sourceIdentity = path.join(source, '.arion-source-sha256');
   if (!existsSync(sourceIdentity) || readFileSync(sourceIdentity, 'utf8').trim() !== spec.source.sha256) {
     rmSync(source, { recursive: true, force: true });
     rmSync(path.join(work, platform), { recursive: true, force: true });
+    rmSync(path.join(work, `${platform}-cross`), { recursive: true, force: true });
     mkdirSync(source, { recursive: true });
     run('tar', ['-xzf', archive, '-C', source, '--strip-components=1']);
     writeFileSync(sourceIdentity, `${spec.source.sha256}\n`);
   }
   // Do not depend on build-host VC/OpenMP redistributables or GPU drivers.
   // MSVC uses /MT; MinGW links its compiler and pthread runtimes statically.
-  const flags = ['-S', source, '-B', build, '-DCMAKE_BUILD_TYPE=Release', '-DBUILD_SHARED_LIBS=OFF', '-DGGML_STATIC=ON',
+  const flags = ['-S', source, '-B', build, ...(cross ? ['-DCMAKE_SYSTEM_NAME=Windows', '-DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc', '-DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++', '-DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres'] : []), '-DCMAKE_BUILD_TYPE=Release', '-DBUILD_SHARED_LIBS=OFF', '-DGGML_STATIC=ON',
     `-DCMAKE_PROJECT_INCLUDE=${path.join(root, 'scripts', 'cmake', 'windows-llm.cmake')}`,
     '-DGGML_NATIVE=OFF', '-DGGML_OPENMP=OFF', '-DGGML_BACKEND_DL=OFF', '-DGGML_CPU_ALL_VARIANTS=OFF',
     '-DGGML_AVX512=OFF', '-DGGML_AVX_VNNI=OFF', '-DGGML_AVX512_VBMI=OFF', '-DGGML_AVX512_VNNI=OFF', '-DGGML_AVX512_BF16=OFF',
@@ -56,8 +58,13 @@ if (platform === 'windows-amd64') {
   copyFileSync(path.join(source, 'LICENSE'), path.join(destination, 'licenses', 'llama.cpp-LICENSE'));
   copyFileSync(path.join(source, 'vendor', 'cpp-httplib', 'LICENSE'), path.join(destination, 'licenses', 'cpp-httplib-LICENSE'));
   copyFileSync(path.join(source, 'licenses', 'LICENSE-jsonhpp'), path.join(destination, 'licenses', 'jsonhpp-LICENSE'));
-  const checked = verifyWindowsLLMPackage(destination);
-  console.log(`Verified Windows GGUF DLL closure and isolated CPU launch: ${checked.version}.`);
+  if (cross) {
+    verifyWindowsPEDependencies(['llama-server.exe', 'llama-server-avx2.exe'].map(file => path.join(destination,file)));
+    console.log('Verified cross-built Windows GGUF DLL closure; native CPU launch remains unverified.');
+  } else {
+    const checked = verifyWindowsLLMPackage(destination);
+    console.log(`Verified Windows GGUF DLL closure and isolated CPU launch: ${checked.version}.`);
+  }
 }
 for (const archive of spec.archives ?? []) {
   const file = pinnedFile(archive);
@@ -72,6 +79,10 @@ for (const archive of spec.archives ?? []) {
     chmodSync(target, name.endsWith('.dylib') || name === 'llama-server' ? 0o755 : 0o644);
   }
   rmSync(unpacked, { recursive: true, force: true });
+}
+const notices = path.join(root, 'third_party/runtime-notices');
+for (const name of readdirSync(notices)) {
+  copyFileSync(path.join(notices, name), path.join(destination, 'licenses', name === 'README.md' ? 'runtime-notices.md' : name));
 }
 for (const name of ['cmudict-pronunciation-v1-LICENSE', 'pypinyin-character-readings-v1-LICENSE.txt', 'cmudict-pronunciation-v1-provenance.json', 'pypinyin-character-readings-v1-provenance.json']) {
   copyFileSync(path.join(desktop, 'infrastructure/llm/spelling/data', name), path.join(destination, 'licenses', name));

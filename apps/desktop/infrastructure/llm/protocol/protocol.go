@@ -22,6 +22,13 @@ const (
 	OpClose    = "close"
 )
 
+// Stable optional error categories; older peers may ignore them.
+const (
+	ErrorInputBudget  = "input_budget"
+	ErrorOutputBudget = "output_budget"
+	ErrorControlInput = "control_input"
+)
+
 // Request is one line on the worker's stdin.
 type Request struct {
 	Version int    `json:"version"`
@@ -55,6 +62,7 @@ type Response struct {
 	ID    uint64 `json:"id"`
 	OK    bool   `json:"ok"`
 	Error string `json:"error,omitempty"`
+	Code  string `json:"code,omitempty"`
 	// Load.
 	LoadMs       float64 `json:"loadMs,omitempty"`
 	PromptID     string  `json:"promptId,omitempty"`

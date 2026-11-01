@@ -4,13 +4,14 @@ Keyboard-first AI writing for **macOS and Windows**, built with Go + MyGo and ba
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
+- Offline Qwen3.5-2B Q4_K_M writing: explicitly download about 1.28 GB once, then start locally without login or an API key.
 - Polish, translate, rewrite and continue a draft with a native desktop editor.
 - Sign in with ChatGPT to request eligible plan usage, with encrypted local credential storage and account-specific model discovery.
 - Select text in a supported editor and press **Cmd/Ctrl+Shift+J** for a compact panel. Generate, inspect changes and apply, or import/type a draft and copy the result.
 - Local style cards, glossary and per-task defaults; advisory number/date/term/commitment checks require acknowledgment when flagged.
 - English and Simplified Chinese UI; separate app settings and credentials; no microphone or speech-model setup in the shadowinput entry point.
 
-**Development preview:** local tests, a macOS arm64 build and a Windows x64 cross-build pass. [Download preview ZIPs](docs/project/shadowinput.md#downloads) for both platforms; signed installers are not available. Real ChatGPT account authorization and inference, native Windows behavior and external-editor delivery still require acceptance testing. Selection, diff and style features are implemented but still need native editor acceptance. Review checks are advisory and protect names only when listed in the glossary. Inline prediction, external undo and local model integration are not implemented.
+**Development preview:** local tests, a macOS arm64 build and a Windows x64 cross-build pass. [Download preview ZIPs](docs/project/shadowinput.md#downloads) for both platforms; signed installers are not available. Real ChatGPT account authorization and inference, native Windows behavior and external-editor delivery still require acceptance testing. Selection, diff and style features are implemented but still need native editor acceptance. Review checks are advisory and protect names only when listed in the glossary. Real macOS local inference, context limits and cancel/retry passed smoke tests. Windows local inference still needs native acceptance. Inline prediction and external undo are not implemented.
 
 ```sh
 node scripts/shadowinput.mjs check

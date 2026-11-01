@@ -1,5 +1,7 @@
 # Maintained dependency snapshots
 
+[Native runtime notices](runtime-notices/README.md) records the licenses retained for the shadowinput local writing runtime and Windows compiler runtime libraries.
+
 The `native-clipboard-writer-v1` patch adds `ui.Content.WithClipboardWriter`, a per-content main-thread text-copy hook. Arion uses it for clipboard picker and text-selection copies so keyboard and system-menu selection copies carry the same internal marker as explicit copy buttons. It preserves selection, edit menus, and the default writer in other windows. Run `GOWORK=off CGO_ENABLED=0 go test ./ui -run 'ContentClipboardWriter|TextSelection'` from `third_party/mygo`.
 
 `mygo/` is the complete Go module snapshot of `github.com/egoist/mygo v0.4.6`, under its original MIT licence. `mygo-upstream-sha256.json` records every original module file's SHA-256 before patching. The desktop's `go.mod` replaces that dependency with this directory; the module cache is never modified. Package notices identify the local patch.

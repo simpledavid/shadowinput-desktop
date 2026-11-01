@@ -7,11 +7,13 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 func TestPartialResultCannotBeDelivered(t *testing.T) {
 	s := state.NewState()
+	s.Provider = state.ProviderChatGPT
 	s.Connected = true
 	s.Source = "A draft"
 	s.Output = "Partial result"
@@ -42,6 +44,7 @@ func TestPartialResultCannotBeDelivered(t *testing.T) {
 
 func TestRiskReviewRequiresExplicitAcknowledgment(t *testing.T) {
 	s := state.NewState()
+	s.Provider = state.ProviderChatGPT
 	s.Connected, s.ProfileReady, s.HasTarget, s.Completed = true, true, true, true
 	s.Source, s.Output = "Maybe 12", "Definitely 20"
 	s.Review = state.Review{Edits: []state.Change{{Kind: "remove", Text: s.Source}, {Kind: "add", Text: s.Output}}, Issues: []state.Issue{{Kind: "numbers", Before: "12", After: "20"}}}
@@ -79,8 +82,9 @@ func TestRiskReviewRequiresExplicitAcknowledgment(t *testing.T) {
 func TestWritingScreens(t *testing.T) {
 	for _, locale := range []copy.Locale{copy.English, copy.SimplifiedChinese} {
 		for _, dark := range []bool{false, true} {
-			for _, screen := range []string{"account", "compact", "review", "styles", "recovery"} {
+			for _, screen := range []string{"account", "compact", "review", "styles", "recovery", "local-off", "local-progress", "local-ready", "local-error", "local-compact"} {
 				s := state.NewState()
+				s.Provider = state.ProviderChatGPT
 				s.Locale, s.ProfileReady = locale, true
 				w, h := 820, 820
 				if screen != "account" {
@@ -105,7 +109,32 @@ func TestWritingScreens(t *testing.T) {
 					s.Failure = copy.WriteAuthError
 					s.Connected = false
 				}
-				tt := ui.NewTester(func(c *ui.Context) { Editor(c, &s, state.Actions{}) }, w, h)
+				if strings.HasPrefix(screen, "local-") {
+					s.Provider = state.ProviderLocal
+					s.Local = state.LocalStatus{Name: "Qwen3.5 2B · Q4_K_M", State: "off", SizeBytes: 1280835840}
+					s.Connected = false
+					s.Model = ""
+					switch screen {
+					case "local-progress":
+						s.Local.State = "provisioning"
+						s.Local.Phase = "downloading"
+						s.Local.Busy = true
+						s.Local.Done = 650000000
+						s.Local.Total = 1280835840
+					case "local-ready":
+						s.Local.State = "ready"
+						s.Local.Installed = true
+					case "local-error":
+						s.Local.State = "failed"
+						s.Local.Failure = copy.WriteLocalDownloadError
+					case "local-compact":
+						s.Local.State = "ready"
+						s.Local.Installed = true
+						s.Compact = true
+						w, h = 560, 650
+					}
+				}
+				tt := ui.NewTester(func(c *ui.Context) { c.DisableAnimations(); Editor(c, &s, state.Actions{}) }, w, h)
 				tt.SetDark(dark)
 				if !tt.HasText("shadowinput") {
 					t.Fatal("brand missing")
@@ -141,5 +170,48 @@ func TestWritingScreens(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestLocalSetupAndGenerationActions(t *testing.T) {
+	s := state.NewState()
+	s.ProfileReady = true
+	s.Source = "A draft"
+	s.Local = state.LocalStatus{State: "off", Name: "Qwen3.5 2B", SizeBytes: 1280835840}
+	downloads, cancels, generated, stops := 0, 0, 0, 0
+	a := state.Actions{DownloadLocal: func() { downloads++ }, CancelLocal: func() { cancels++ }, Generate: func() { generated++ }, DisableLocal: func() { stops++ }}
+	tt := ui.NewTester(func(c *ui.Context) { Editor(c, &s, a) }, 820, 820)
+	if tt.HasText("Sign in with ChatGPT") {
+		t.Fatal("local setup requires account")
+	}
+	if err := tt.Click("Download & start"); err != nil {
+		t.Fatal(err)
+	}
+	_ = tt.Click("Generate")
+	if downloads != 1 || generated != 0 {
+		t.Fatal("download or readiness gate failed")
+	}
+	s.Local.Busy = true
+	s.Local.State = "provisioning"
+	s.Local.Phase = "downloading"
+	tt.Frame()
+	if err := tt.Click("Cancel setup"); err != nil {
+		t.Fatal(err)
+	}
+	if cancels != 1 {
+		t.Fatal("cancel disconnected")
+	}
+	s.Local.Busy = false
+	s.Local.State = "ready"
+	s.Local.Installed = true
+	tt.Frame()
+	if err := tt.Click("Generate"); err != nil {
+		t.Fatal(err)
+	}
+	if err := tt.Click("Stop model"); err != nil {
+		t.Fatal(err)
+	}
+	if generated != 1 || stops != 1 {
+		t.Fatal("local ready actions disconnected")
 	}
 }

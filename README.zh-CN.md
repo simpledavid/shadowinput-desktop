@@ -4,13 +4,14 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
+- 本地 Qwen3.5-2B Q4_K_M：首次主动下载约 1.28 GB 模型，之后可离线启动，无需登录或 API Key。
 - 原生桌面编辑器，支持润色、翻译、改写和续写。
 - 使用 ChatGPT 登录并申请使用符合条件的套餐额度；凭据在本地加密保存，模型来自账户授权列表。
 - 在支持的编辑器中选中文字，按 **Cmd/Ctrl+Shift+J** 唤起小浮窗；生成、审阅后应用，也可手动输入或粘贴原文，再复制结果。
 - 本地风格卡、专有词表及操作默认值；数字、日期、词表和承诺的可疑变化需确认后才能应用。
 - 提供英文和简体中文界面，使用独立设置及凭据；shadowinput 入口无需麦克风或语音模型。
 
-**开发预览版：**本地测试、macOS arm64 构建和 Windows x64 交叉编译已通过。可[下载双端预览版 ZIP](docs/project/shadowinput.md#downloads)，尚无已签名安装包。真实 ChatGPT 登录与推理、Windows 原生运行以及跨应用粘贴仍需验收。选区、修改对比和个人风格已实现，仍需跨应用验收。变化提示仅作辅助，人名需加入词表。行内补全、外部撤销及本地模型接入尚未实现。
+**开发预览版：**本地测试、macOS arm64 构建和 Windows x64 交叉编译已通过。可[下载双端预览版 ZIP](docs/project/shadowinput.md#downloads)，尚无已签名安装包。真实 ChatGPT 登录与推理、Windows 原生运行以及跨应用粘贴仍需验收。选区、修改对比和个人风格已实现，仍需跨应用验收。变化提示仅作辅助，人名需加入词表。macOS 本地真实推理、上下文限制与取消重试已通过冒烟测试；Windows 本地推理仍待原生验收。行内补全及外部撤销尚未实现。
 
 ```sh
 node scripts/shadowinput.mjs check

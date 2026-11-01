@@ -1,9 +1,12 @@
 package client
 
 import (
+	"arion.local/desktop/infrastructure/llm/engine"
+	"arion.local/desktop/infrastructure/llm/prompt"
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"strings"
@@ -47,6 +50,8 @@ func fakeWorker() {
 		switch {
 		case req.Op == protocol.OpLoad:
 			_ = out.Encode(protocol.Response{ID: req.ID, OK: true, PromptID: "test", PrefixTokens: 3})
+		case req.Op == protocol.OpComplete:
+			_ = out.Encode(protocol.Response{ID: req.ID, Error: "bounded failure", Code: req.Chat.Messages[0].Content})
 		case req.Op == protocol.OpClose:
 			_ = out.Encode(protocol.Response{ID: req.ID, OK: true})
 			return
@@ -127,5 +132,15 @@ func TestEarlierSourceEvidenceSurvivesProtocolRoundTrip(t *testing.T) {
 	result, err := c.Rewrite(context.Background(), ports.RewriteRequest{Identity: id, Text: "echo earlier source", PreviousText: earlier})
 	if err != nil || result.Text != earlier {
 		t.Fatalf("earlier source lost: %q, %v", result.Text, err)
+	}
+}
+
+func TestCompletionBudgetErrorsSurviveWorkerProtocol(t *testing.T) {
+	c := start(t)
+	for code, want := range map[string]error{protocol.ErrorInputBudget: engine.ErrInputBudget, protocol.ErrorOutputBudget: engine.ErrOutputBudget, protocol.ErrorControlInput: engine.ErrControlInput} {
+		_, err := c.Complete(context.Background(), prompt.ChatRequest{Messages: []prompt.Message{{Role: "user", Content: code}}, MaxTokens: 512})
+		if !errors.Is(err, want) {
+			t.Fatalf("%s lost: %v", code, err)
+		}
 	}
 }

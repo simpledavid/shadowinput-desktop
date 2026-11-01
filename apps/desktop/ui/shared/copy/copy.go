@@ -815,3 +815,30 @@ const (
 	WriteSelectionUnavailable Key = "WriteSelectionUnavailable"
 	WriteSelectionCaptured    Key = "WriteSelectionCaptured"
 )
+
+// Local writing engine and setup.
+const (
+	WriteProvider           Key = "WriteProvider"
+	WriteProviderLocal      Key = "WriteProviderLocal"
+	WriteProviderChatGPT    Key = "WriteProviderChatGPT"
+	WriteLocalPrivacy       Key = "WriteLocalPrivacy"
+	WriteLocalOff           Key = "WriteLocalOff"
+	WriteLocalReady         Key = "WriteLocalReady"
+	WriteLocalLoading       Key = "WriteLocalLoading"
+	WriteLocalChecking      Key = "WriteLocalChecking"
+	WriteLocalDownloading   Key = "WriteLocalDownloading"
+	WriteLocalVerifying     Key = "WriteLocalVerifying"
+	WriteLocalDownload      Key = "WriteLocalDownload"
+	WriteLocalEnable        Key = "WriteLocalEnable"
+	WriteLocalDisable       Key = "WriteLocalDisable"
+	WriteLocalCancel        Key = "WriteLocalCancel"
+	WriteLocalUnavailable   Key = "WriteLocalUnavailable"
+	WriteLocalUnsupported   Key = "WriteLocalUnsupported"
+	WriteLocalRuntimeError  Key = "WriteLocalRuntimeError"
+	WriteLocalCorrupt       Key = "WriteLocalCorrupt"
+	WriteLocalDownloadError Key = "WriteLocalDownloadError"
+	WriteLocalInputBudget   Key = "WriteLocalInputBudget"
+	WriteLocalOutputBudget  Key = "WriteLocalOutputBudget"
+	WriteLocalControlInput  Key = "WriteLocalControlInput"
+	WriteTimeoutError       Key = "WriteTimeoutError"
+)

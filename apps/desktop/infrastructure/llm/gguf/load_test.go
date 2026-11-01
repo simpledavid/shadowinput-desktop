@@ -41,11 +41,13 @@ func TestCancellationDuringNativeReloadIsBounded(t *testing.T) {
 	t.Setenv("ARION_TEST_UNREADY_GGUF", marker)
 	var stop atomic.Bool
 	observed := make(chan struct{})
+	var requested time.Time
 	go func() {
 		defer close(observed)
-		deadline := time.Now().Add(2 * time.Second)
+		deadline := time.Now().Add(15 * time.Second)
 		for time.Now().Before(deadline) {
 			if _, err := os.Stat(marker); err == nil {
+				requested = time.Now()
 				stop.Store(true)
 				return
 			}
@@ -60,7 +62,7 @@ func TestCancellationDuringNativeReloadIsBounded(t *testing.T) {
 	if _, markerErr := os.Stat(marker); markerErr != nil {
 		t.Fatal("unready native helper never started")
 	}
-	if err != nil || !result.Cancelled || time.Since(started) > 3*time.Second {
-		t.Fatalf("reload cancellation was not bounded: %+v %v elapsed %v", result, err, time.Since(started))
+	if err != nil || !result.Cancelled || time.Since(requested) > 3*time.Second {
+		t.Fatalf("reload cancellation was not bounded: %+v %v cancellation latency %v (total %v)", result, err, time.Since(requested), time.Since(started))
 	}
 }

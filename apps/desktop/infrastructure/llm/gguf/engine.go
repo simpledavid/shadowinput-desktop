@@ -276,7 +276,7 @@ func (e *Engine) generate(ctx context.Context, request prompt.ChatRequest, prefi
 		return completion{}, errors.New("unexpected GGUF completion protocol")
 	}
 	if !prefill && result.Choices[0].Finish != "stop" {
-		return result, errors.New("GGUF output budget exhausted")
+		return result, engine.ErrOutputBudget
 	}
 	if !utf8.ValidString(result.Choices[0].Message.Content) {
 		return result, errors.New("GGUF completion is not UTF-8")
@@ -289,20 +289,11 @@ func (e *Engine) Run(req engine.Request, stop *atomic.Bool) (engine.Result, erro
 	if stop.Load() {
 		return engine.Result{Cancelled: true}, nil
 	}
-	if e.reload {
-		fresh, _, err := load(e.config, e.runtimeDir, stop)
-		if err != nil {
-			if stop.Load() {
-				return engine.Result{Cancelled: true}, nil
-			}
-			return engine.Result{}, ErrRuntimeUnavailable
-		}
-		*e = *fresh
+	if err := e.ensureLoaded(stop); err != nil {
 		if stop.Load() {
-			e.Close()
-			e.reload = true
 			return engine.Result{Cancelled: true}, nil
 		}
+		return engine.Result{}, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -367,4 +358,24 @@ func (e *Engine) generateStage(ctx context.Context, req prompt.ChatRequest, pref
 		result.Text = out.Choices[0].Message.Content
 	}
 	return result, err
+}
+
+// ensureLoaded reloads only for a new explicit request after cancellation.
+func (e *Engine) ensureLoaded(stop *atomic.Bool) error {
+	if e.reload {
+		fresh, _, err := load(e.config, e.runtimeDir, stop)
+		if err != nil {
+			if stop.Load() {
+				return context.Canceled
+			}
+			return ErrRuntimeUnavailable
+		}
+		*e = *fresh
+		if stop.Load() {
+			e.Close()
+			e.reload = true
+			return context.Canceled
+		}
+	}
+	return nil
 }

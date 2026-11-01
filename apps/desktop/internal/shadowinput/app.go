@@ -8,13 +8,18 @@ import (
 	"html"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"time"
 
 	"arion.local/core/application"
 	"arion.local/core/domain"
+	"arion.local/core/domain/ports"
 	"arion.local/desktop/infrastructure/browser"
 	"arion.local/desktop/infrastructure/chatgptplan"
 	"arion.local/desktop/infrastructure/clipboardos"
+	"arion.local/desktop/infrastructure/llm/engine"
+	"arion.local/desktop/infrastructure/localwriting"
+	"arion.local/desktop/infrastructure/rewriting"
 	"arion.local/desktop/ui/pages/writing"
 	"arion.local/desktop/ui/shared/copy"
 	state "arion.local/desktop/ui/shared/writing"
@@ -23,19 +28,23 @@ import (
 )
 
 type app struct {
-	s         state.State
-	client    *chatgptplan.Client
-	win       *mygo.Window
-	panel     *mygo.Window
-	target    clipboardos.Target
-	directory string
-	job       uint64
-	cancel    context.CancelFunc
-	quitting  bool
+	s                 state.State
+	client            *chatgptplan.Client
+	win               *mygo.Window
+	panel             *mygo.Window
+	target            clipboardos.Target
+	directory         string
+	job               uint64
+	cancel            context.CancelFunc
+	quitting          bool
+	local             *rewriting.Service
+	localDone         chan struct{}
+	localCancel       context.CancelFunc
+	localJob          uint64
+	localStatusQueued atomic.Bool
 }
 
-// Run uses its own lifecycle: no microphone, model download, Arion account,
-// telemetry or upstream updater is started by this entry point.
+// Run starts no microphone, background download, upstream account or telemetry.
 func Run() error {
 	mygo.App.SetName(state.Name)
 	if !mygo.App.RequestSingleInstanceLock() {
@@ -66,39 +75,25 @@ func (a *app) ready() {
 	mygo.App.OnWindowAllClosed(func() {})
 	mygo.App.OnActivate(func(bool) { a.show() })
 	mygo.App.OnSecondInstance(func([]string, string) { a.show() })
-	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { a.quitting = true; a.stop(); a.releaseTarget() })
+	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { a.quitting = true; a.stop(); a.releaseTarget(); a.closeLocal() })
 	mygo.App.OnWillQuit(func(*mygo.QuitEvent) { mygo.GlobalShortcut.UnregisterAll() })
 	if err := mygo.GlobalShortcut.Register(state.Shortcut, a.capture); err != nil {
 		a.s.Failure = copy.WriteShortcutError
 	}
 	a.installTray()
-	a.s.Busy = true
-	go func() {
-		client, err := chatgptplan.New(chatgptplan.Vault{Directory: a.directory})
-		mygo.RunOnMain(func() {
-			if a.quitting {
-				return
-			}
-			a.s.Busy = false
-			if err != nil {
-				a.s.Failure = copy.WriteStoreError
-			} else {
-				a.client = client
-				a.updateAccount()
-				if a.s.Connected {
-					a.models()
-				}
-			}
-			a.invalidate()
-		})
-	}()
+	a.initLocal()
+	if a.s.Provider == state.ProviderChatGPT {
+		a.initAccount()
+	}
+
 }
 
 func (a *app) actions() state.Actions {
 	return state.Actions{SignIn: a.signIn, Logout: a.logout, RefreshModels: a.models, Generate: a.generate, Cancel: a.stop,
 		Import: a.importText, Copy: a.copyResult, Paste: a.pasteResult, Hide: a.hide, Changed: a.changed, Preferences: a.savePreferences,
-		RequestAccess: requestAccess,
-		EditSource:    a.editSource, TaskChanged: a.taskChanged, StyleChanged: a.styleChanged, OpenEditor: a.openEditor, OpenStyles: a.openStyles, SaveStyle: a.saveStyle, NewStyle: a.newStyle, DeleteStyle: a.deleteStyle, SaveTerms: a.saveTerms, SetDefault: a.setDefault, RetryProfile: a.loadProfile, SwitchAccount: a.switchAccount,
+		RequestAccess:   requestAccess,
+		ProviderChanged: a.providerChanged, DownloadLocal: func() { a.startLocal(true, true) }, EnableLocal: func() { a.startLocal(false, true) }, DisableLocal: func() { a.startLocal(false, false) }, CancelLocal: func() { a.startLocal(false, false) },
+		EditSource: a.editSource, TaskChanged: a.taskChanged, StyleChanged: a.styleChanged, OpenEditor: a.openEditor, OpenStyles: a.openStyles, SaveStyle: a.saveStyle, NewStyle: a.newStyle, DeleteStyle: a.deleteStyle, SaveTerms: a.saveTerms, SetDefault: a.setDefault, RetryProfile: a.loadProfile, SwitchAccount: a.switchAccount,
 		ManageUsage: func() { a.open("https://chatgpt.com/settings/usage") }, Source: func() { a.open("https://github.com/simpledavid/shadowinput-desktop") }}
 }
 
@@ -116,7 +111,16 @@ func (a *app) show() {
 		a.invalidate()
 	}
 }
-func (a *app) hide() { a.stop(); a.releaseTarget(); a.closePanel(); a.s.Compact = false; a.win.Hide() }
+func (a *app) hide() {
+	if a.s.Local.Busy {
+		a.startLocal(false, false)
+	}
+	a.stop()
+	a.releaseTarget()
+	a.closePanel()
+	a.s.Compact = false
+	a.win.Hide()
+}
 func (a *app) open(url string) {
 	go func() {
 		if browser.Open(url) != nil {
@@ -223,7 +227,7 @@ func (a *app) logout() {
 }
 
 func (a *app) models() {
-	if a.s.Busy || a.client == nil || !a.s.Connected {
+	if a.s.Provider != state.ProviderChatGPT || a.s.Busy || a.client == nil || !a.s.Connected {
 		return
 	}
 	ctx, job := a.start(45 * time.Second)
@@ -246,10 +250,25 @@ func (a *app) models() {
 }
 
 func (a *app) generate() {
-	if a.s.Busy || a.client == nil || !a.s.Connected || !a.s.ProfileReady {
+	if !a.s.CanGenerate() {
 		return
 	}
 	r := domain.WritingRequest{Task: a.s.Task, Text: a.s.Source, Instruction: a.s.Instruction, Language: a.s.Language, Model: a.s.Model, Terms: append([]string(nil), a.s.Profile.Terms...)}
+	var generator ports.WritingGenerator
+	if a.s.Provider == state.ProviderLocal {
+		if a.local == nil || !a.local.Ready() {
+			a.s.Failure = copy.WriteLocalUnavailable
+			return
+		}
+		r.Model = rewriting.DefaultModel
+		generator = localwriting.Generator{Chat: a.local}
+	} else {
+		if a.client == nil {
+			a.s.Failure = copy.WriteStoreError
+			return
+		}
+		generator = a.client
+	}
 	if style, ok := a.s.Profile.Style(a.s.StyleID); ok {
 		r.Style = &style
 	}
@@ -260,7 +279,7 @@ func (a *app) generate() {
 	a.changed()
 	ctx, job := a.start(90 * time.Second)
 	go func() {
-		output, err := (application.Writer{Generator: a.client}).Write(ctx, r, func(text string) {
+		output, err := (application.Writer{Generator: generator}).Write(ctx, r, func(text string) {
 			mygo.RunOnMain(func() {
 				if job == a.job && !a.quitting {
 					a.s.Output = text
@@ -286,6 +305,16 @@ func (a *app) generate() {
 
 func failureKey(err error) copy.Key {
 	switch {
+	case errors.Is(err, engine.ErrInputBudget):
+		return copy.WriteLocalInputBudget
+	case errors.Is(err, engine.ErrOutputBudget), errors.Is(err, localwriting.ErrIncomplete):
+		return copy.WriteLocalOutputBudget
+	case errors.Is(err, engine.ErrControlInput):
+		return copy.WriteLocalControlInput
+	case domain.CodeOf(err) == domain.CodeModelMissing || domain.CodeOf(err) == domain.CodeModelUnsupported:
+		return copy.WriteLocalUnavailable
+	case domain.CodeOf(err) == domain.CodeCancelled:
+		return copy.WriteCanceled
 	case errors.Is(err, chatgptplan.ErrPermission):
 		return copy.WritePermissionError
 	case errors.Is(err, chatgptplan.ErrAuth):
@@ -296,7 +325,9 @@ func failureKey(err error) copy.Key {
 		return copy.WriteLimitError
 	case errors.Is(err, chatgptplan.ErrIncomplete):
 		return copy.WriteIncompleteError
-	case errors.Is(err, chatgptplan.ErrNetwork), errors.Is(err, context.DeadlineExceeded):
+	case errors.Is(err, context.DeadlineExceeded):
+		return copy.WriteTimeoutError
+	case errors.Is(err, chatgptplan.ErrNetwork):
 		return copy.WriteNetworkError
 	case errors.Is(err, context.Canceled):
 		return copy.WriteCanceled
@@ -308,8 +339,9 @@ func failureKey(err error) copy.Key {
 }
 
 type preferences struct {
-	Locale copy.Locale
-	Model  string
+	Provider string
+	Locale   copy.Locale
+	Model    string
 }
 
 func (a *app) loadPreferences() {
@@ -322,10 +354,18 @@ func (a *app) loadPreferences() {
 		a.s.Failure = copy.WriteStoreError
 		return
 	}
+	if p.Provider != "" && p.Provider != state.ProviderLocal && p.Provider != state.ProviderChatGPT {
+		a.s.Failure = copy.WriteStoreError
+		return
+	}
 	a.s.Locale, a.s.Model = p.Locale, p.Model
+	a.s.Provider = p.Provider
+	if a.s.Provider == "" {
+		a.s.Provider = state.ProviderChatGPT
+	} // Preserve the previous preview's account workflow.
 }
 func (a *app) savePreferences() {
-	b, err := json.Marshal(preferences{a.s.Locale, a.s.Model})
+	b, err := json.Marshal(preferences{Provider: a.s.Provider, Locale: a.s.Locale, Model: a.s.Model})
 	if err == nil {
 		err = os.MkdirAll(a.directory, 0700)
 	}

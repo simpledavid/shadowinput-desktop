@@ -1,8 +1,9 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, copyFileSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, cpSync, copyFileSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { verifyWindowsPEDependencies } from './lib/windows-pe.mjs';
 import { stageGoModuleNotices } from './lib/go-module-notices.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -14,17 +15,19 @@ const repository = 'https://github.com/simpledavid/shadowinput-desktop';
 function output(command, args, env = process.env) {
   return execFileSync(command, args, { cwd: root, env, encoding: 'utf8' }).trim();
 }
-function run(command, args, env = process.env) {
-  const result = spawnSync(command, args, { cwd: root, env, stdio: 'inherit' });
+function run(command, args, env = process.env, cwd = root) {
+  const result = spawnSync(command, args, { cwd, env, stdio: 'inherit' });
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 if (mode === 'check') {
-  run('go', ['test', '-race', './packages/core/...', './apps/desktop/infrastructure/chatgptplan', './apps/desktop/infrastructure/writingprefs', './apps/desktop/ui/shared/writing', './apps/desktop/internal/oauthloopback', './apps/desktop/internal/shadowinput', './apps/desktop/ui/features/writing', './apps/desktop/ui/shared/copy']);
+  run('go', ['test', '-race', './packages/core/...', './apps/desktop/infrastructure/chatgptplan', './apps/desktop/infrastructure/localwriting', './apps/desktop/infrastructure/llm/...', './apps/desktop/infrastructure/rewriting', './apps/desktop/infrastructure/provision', './apps/desktop/cmd/arion-llm', './apps/desktop/infrastructure/writingprefs', './apps/desktop/ui/shared/writing', './apps/desktop/internal/oauthloopback', './apps/desktop/internal/shadowinput', './apps/desktop/ui/features/writing', './apps/desktop/ui/shared/copy']);
   run('go', ['vet', source, './apps/desktop/infrastructure/chatgptplan', './apps/desktop/internal/shadowinput']);
   run(process.execPath, ['scripts/check-repository.mjs']);
 } else if (mode === 'dev') {
-  run('go', ['run', source]);
+  const platform = nativeTarget === 'macos' ? 'darwin-arm64' : 'windows-amd64';
+  run(process.execPath, ['scripts/stage-llm-runtime.mjs', platform]);
+  run('go', ['run', './cmd/shadowinput'], process.env, path.join(root, 'apps/desktop'));
 } else if (mode === 'build' || mode === 'package') {
   if (!['macos', 'windows'].includes(target)) throw new Error('Choose macos or windows');
   if (target === 'macos' && process.platform !== 'darwin') throw new Error('macOS builds require a Mac');
@@ -45,11 +48,14 @@ if (mode === 'check') {
   mkdirSync(resources, { recursive: true });
   const env = { ...process.env, GOOS: target === 'macos' ? 'darwin' : 'windows', GOARCH: target === 'macos' ? 'arm64' : 'amd64', CGO_ENABLED: target === 'macos' ? '1' : '0' };
   if (target === 'macos') env.MACOSX_DEPLOYMENT_TARGET = '14.0';
+  const platform = `${env.GOOS}-${env.GOARCH}`;
+  run(process.execPath, ['scripts/stage-llm-runtime.mjs', platform]);
+  cpSync(path.join(root, 'apps/desktop/resources', platform, 'llm'), path.join(resources, 'llm'), {recursive: true});
   run('go', ['build', '-trimpath', ...(target === 'windows' ? ['-ldflags=-H=windowsgui'] : []), '-o', executable, source], env);
   copyFileSync(path.join(root, 'LICENSE'), path.join(resources, 'LICENSE.txt'));
   copyFileSync(path.join(root, 'docs/project/shadowinput.md'), path.join(resources, 'SOURCE-AND-NOTICES.md'));
   const licenses = path.join(resources, 'licenses');
-  const modules = output('go', ['list', '-deps', '-f', '{{with .Module}}{{.Path}}\t{{.Version}}\t{{.Dir}}{{end}}', source], env);
+  const modules = output('go', ['list', '-deps', '-f', '{{with .Module}}{{.Path}}\t{{.Version}}\t{{.Dir}}{{end}}', source, './apps/desktop/cmd/arion-llm'], env);
   stageGoModuleNotices(modules, licenses);
   const goroot = output('go', ['env', 'GOROOT'], env);
   copyFileSync(path.join(goroot, 'LICENSE'), path.join(licenses, 'Go-LICENSE.txt'));
@@ -58,7 +64,7 @@ if (mode === 'check') {
   for (const file of readdirSync(icons).filter(file => file.startsWith('LICENSE'))) {
     copyFileSync(path.join(icons, file), path.join(licenses, `icons-${file}`));
   }
-  const buildInfo = { product: 'shadowinput', version, revision, dirty, target, arch: env.GOARCH, go: output('go', ['env', 'GOVERSION'], env), source: `${repository}/tree/${revision}`, license: 'AGPL-3.0' };
+  const buildInfo = { product: 'shadowinput', version, revision, dirty, target, arch: env.GOARCH, go: output('go', ['env', 'GOVERSION'], env), source: `${repository}/tree/${revision}`, license: 'AGPL-3.0', localRuntime: JSON.parse(readFileSync(path.join(root, 'scripts/llm-runtime.json'), 'utf8')).platforms[platform], localModel: 'qwen3.5-2b-q4-k-m-metal', weightsBundled: false };
   writeFileSync(path.join(resources, 'BUILD-INFO.json'), `${JSON.stringify(buildInfo, null, 2)}\n`);
   writeFileSync(path.join(out, 'README.txt'), `shadowinput ${version} — development preview / 开发预览版
 
@@ -72,6 +78,10 @@ Flagged changes require review. Styles, terms and task defaults stay on this dev
 数字、日期、词表及承诺的可疑变化需要确认；风格、词表和操作默认值保存在本机。
 macOS selection and Apply changes require Accessibility permission.
 macOS 的选区读取和“应用修改”需要辅助功能权限。
+Local model: choose Local model, then Download & start (1.28 GB). Subsequent Start model works offline.
+本地模型：选择“本地模型”后“下载并启动”（1.28 GB）；此后可离线启动。
+Qwen3.5-2B Q4_K_M runs on this computer; no ChatGPT account or API key is needed.
+本机运行 Qwen3.5-2B Q4_K_M，无需 ChatGPT 账号或 API Key。
 Real ChatGPT login, account eligibility and inference still need acceptance testing.
 真实 ChatGPT 登录、账号资格与推理仍待验收。
 
@@ -94,9 +104,14 @@ Based on AstraFoundry/Arion. Distributed under AGPL-3.0; upstream and dependency
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
 </dict></plist>\n`);
+    const llm = path.join(resources, 'llm');
+    for (const file of readdirSync(llm).filter(name => name.endsWith('.dylib') || ['llama-server', 'arion-llm'].includes(name))) {
+      run('/usr/bin/codesign', ['--force', '--sign', '-', path.join(llm,file)]);
+    }
     run('/usr/bin/codesign', ['--force', '--sign', '-', app]);
-    run('/usr/bin/codesign', ['--verify', '--strict', app]);
+    run('/usr/bin/codesign', ['--verify', '--deep', '--strict', app]);
   }
+  if (target === 'windows') verifyWindowsPEDependencies([executable, ...['arion-llm.exe','llama-server.exe','llama-server-avx2.exe'].map(file=>path.join(resources,'llm',file))]);
   console.log(`Built ${executable}`);
   if (mode === 'package') {
     const releaseDirectory = path.join(root, 'apps/desktop/build/shadowinput/releases');

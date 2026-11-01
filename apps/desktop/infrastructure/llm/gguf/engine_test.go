@@ -106,3 +106,39 @@ func TestConfiguredOutputBudgetIsEnforced(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestIndependentCompletionErasesBothSidesAndAllowsWritingBudget(t *testing.T) {
+	for _, finish := range []string{"stop", "length"} {
+		calls := []string{}
+		e := &Engine{config: engine.Config{MaxLength: 4096, MaxNewTokens: 2048}, http: &http.Client{Transport: roundTrip(func(r *http.Request) (*http.Response, error) {
+			calls = append(calls, r.URL.Path)
+			body := `{}`
+			switch r.URL.Path {
+			case "/apply-template":
+				body = `{"prompt":"p"}`
+			case "/tokenize":
+				body = `{"tokens":[1,2,3]}`
+			case "/v1/chat/completions":
+				var req prompt.ChatRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					t.Fatal(err)
+				}
+				if req.MaxTokens != 1024 || req.CachePrompt || req.Stream || req.TemplateArgs["enable_thinking"] {
+					t.Fatalf("unsafe request %+v", req)
+				}
+				body = `{"choices":[{"message":{"content":"complete"},"finish_reason":"` + finish + `"}]}`
+			}
+			return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body))}, nil
+		})}}
+		result, err := e.Complete(context.Background(), prompt.ChatRequest{Messages: []prompt.Message{{Role: "user", Content: "draft"}}, MaxTokens: 1024, AllowThinking: true, CachePrompt: true, Stream: true})
+		if finish == "stop" && (err != nil || result.Text != "complete") {
+			t.Fatal(result, err)
+		}
+		if finish == "length" && (!errors.Is(err, engine.ErrOutputBudget) || result.Text != "") {
+			t.Fatal(result, err)
+		}
+		if len(calls) != 5 || calls[0] != "/slots/0" || calls[4] != "/slots/0" {
+			t.Fatalf("state was not erased: %v", calls)
+		}
+	}
+}

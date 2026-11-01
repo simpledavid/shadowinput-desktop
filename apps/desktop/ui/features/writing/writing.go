@@ -13,7 +13,7 @@ var taskKeys = map[string]copy.Key{"polish": copy.WritePolish, "translate": copy
 
 func Editor(c *ui.Context, s *state.State, a state.Actions) {
 	t, m := theme.Apply(c), copy.For(s.Locale)
-	canRun := !s.Busy && s.Connected && s.ProfileReady && s.Model != "" && strings.TrimSpace(s.Source) != ""
+	canRun := s.CanGenerate() && strings.TrimSpace(s.Source) != ""
 	if c.Shortcut(ui.Cmd, ui.KeyEnter) || c.Shortcut(ui.Ctrl, ui.KeyEnter) {
 		if canRun && !s.Settings {
 			a.Generate()
@@ -52,18 +52,7 @@ func Editor(c *ui.Context, s *state.State, a state.Actions) {
 			styleSettings(c, s, a, t, m)
 			return
 		}
-		if !s.Compact {
-			account(c, s, a, t, m)
-		} else {
-			ui.Row(c).AlignItems(ui.Center).Gap(8).Children(func() {
-				label := s.Email
-				if !s.Connected {
-					label = m.Text(copy.WriteAccount)
-				}
-				ui.Text(c, label).FontSize(theme.Caption).TextColor(t.Muted).Grow(1).Wrap()
-				kit.Button(c.Key("account"), t, kit.Ghost, m.Text(copy.WriteAccountSettings), true).OnClick(a.OpenEditor)
-			})
-		}
+		provider(c, s, a, t, m)
 		ui.Scroll(c.Key("writing-scroll")).Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Gap(12).Children(func() {
 				ui.Row(c).Gap(4).Children(func() {
@@ -77,7 +66,7 @@ func Editor(c *ui.Context, s *state.State, a state.Actions) {
 				})
 				ui.Row(c).AlignItems(ui.Center).Gap(8).Children(func() {
 					stylePicker(c.Key("style"), s, a, m).Grow(1)
-					if len(s.Models) > 0 {
+					if s.Provider == state.ProviderChatGPT && len(s.Models) > 0 {
 						if kit.Select(c.Key("model"), &s.Model, s.Models, func(id string) string { return s.ModelNames[id] }, nil).Width(210).Label(m.Text(copy.WriteModel)).Disabled(s.Busy).Changed() {
 							a.Changed()
 							a.Preferences()

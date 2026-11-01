@@ -145,6 +145,14 @@ func (c *Client) call(ctx context.Context, req protocol.Request) (protocol.Respo
 			return protocol.Response{}, domain.Fail(domain.CodeModelUnsupported, "llm worker exited")
 		}
 		if !response.OK {
+			switch response.Code {
+			case protocol.ErrorInputBudget:
+				return response, engine.ErrInputBudget
+			case protocol.ErrorOutputBudget:
+				return response, engine.ErrOutputBudget
+			case protocol.ErrorControlInput:
+				return response, engine.ErrControlInput
+			}
 			return response, domain.Fail(domain.CodeModelUnsupported, response.Error)
 		}
 		return response, nil

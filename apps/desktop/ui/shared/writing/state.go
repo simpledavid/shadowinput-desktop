@@ -11,10 +11,15 @@ type Issue = domain.WritingIssue
 type Change = domain.TextEdit
 
 const Name = "shadowinput"
+const ProviderLocal = "local"
+const ProviderChatGPT = "chatgpt"
+
 const Shortcut = "CmdOrCtrl+Shift+J"
 
 type State struct {
 	AccessRequired                                            bool
+	Provider                                                  string
+	Local                                                     LocalStatus
 	Source, Output, Task, Instruction, Language, Model, Email string
 	Models                                                    []string
 	ModelNames                                                map[string]string
@@ -30,7 +35,7 @@ type State struct {
 }
 
 func NewState() State {
-	return State{Task: "polish", Language: "English", Locale: copy.English, ModelNames: map[string]string{}, Profile: domain.DefaultWritingProfile(), StyleID: "work", ShowDiff: true}
+	return State{Provider: ProviderLocal, Task: "polish", Language: "English", Locale: copy.English, ModelNames: map[string]string{}, Profile: domain.DefaultWritingProfile(), StyleID: "work", ShowDiff: true}
 }
 
 func (s *State) CanDeliver() bool {
@@ -44,8 +49,27 @@ func (s *State) InvalidateResult() {
 	s.Failure, s.Notice = "", ""
 }
 
+// LocalStatus contains display-only state; no runtime or filesystem handles.
+type LocalStatus struct {
+	State, Phase, Name     string
+	Done, Total, SizeBytes int64
+	Installed, Busy        bool
+	Failure                copy.Key
+}
+
+func (s *State) CanGenerate() bool {
+	if s.Busy || !s.ProfileReady || s.Settings {
+		return false
+	}
+	if s.Provider == ProviderLocal {
+		return s.Local.State == "ready" && !s.Local.Busy
+	}
+	return s.Provider == ProviderChatGPT && s.Connected && s.Model != ""
+}
+
 // Actions are supplied by the composition root. Views never access credentials.
 type Actions struct {
+	ProviderChanged, DownloadLocal, EnableLocal, DisableLocal, CancelLocal                                                                  func()
 	RequestAccess                                                                                                                           func()
 	SignIn, Logout, RefreshModels, Generate, Cancel, Import, Copy, Paste, Hide, ManageUsage, Source, Changed, Preferences                   func()
 	EditSource, TaskChanged, StyleChanged, OpenEditor, OpenStyles, SaveStyle, NewStyle, DeleteStyle, SaveTerms, RetryProfile, SwitchAccount func()

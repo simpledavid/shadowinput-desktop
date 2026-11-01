@@ -51,5 +51,6 @@ type Result struct {
 // Errors are explicit outcomes, never a silent original-text substitute.
 var (
 	ErrInputBudget  = errors.New("input exceeds token budget")
+	ErrOutputBudget = errors.New("output exceeds token budget")
 	ErrControlInput = errors.New("input contains chat control markers")
 )

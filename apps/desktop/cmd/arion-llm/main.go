@@ -165,6 +165,10 @@ func (w *worker) complete(req protocol.Request) protocol.Response {
 	ctx, cancel := gguf.StopContext(&w.stop)
 	defer cancel()
 	out, err := w.engine.Complete(ctx, *req.Chat)
+	if errors.Is(err, gguf.ErrRuntimeUnavailable) {
+		w.close()
+		w.fatal = true
+	}
 	if ctx.Err() != nil {
 		return protocol.Response{OK: true, Cancelled: true}
 	}
@@ -181,4 +185,15 @@ func (w *worker) close() {
 	}
 }
 
-func fail(err error) protocol.Response { return protocol.Response{OK: false, Error: err.Error()} }
+func fail(err error) protocol.Response {
+	r := protocol.Response{OK: false, Error: err.Error()}
+	switch {
+	case errors.Is(err, engine.ErrInputBudget):
+		r.Code = protocol.ErrorInputBudget
+	case errors.Is(err, engine.ErrOutputBudget):
+		r.Code = protocol.ErrorOutputBudget
+	case errors.Is(err, engine.ErrControlInput):
+		r.Code = protocol.ErrorControlInput
+	}
+	return r
+}
