@@ -35,31 +35,13 @@ func Install(resources string) error {
 	}
 	digest := sha256.Sum256(bytes)
 	hash := hex.EncodeToString(digest[:])
-	// Reuse the native helper's full keyboard/loader hash closure verification.
-	if _, err = helperCommand(helper, "verify", dll, hash); err != nil {
-		return errors.New("输入法组件校验失败，请重新下载安装包。")
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	if err = elevated(ctx, helper, []string{"install", dll, hash}); err != nil {
-		return err
-	}
-	if _, err = helperCommand(helper, "enable"); err != nil {
-		return errors.New("输入法已安装；请在 Windows 语言设置中启用 shadowinput。")
-	}
-	bytes, err = helperCommand(helper, "query")
-	if err != nil {
-		return err
-	}
-	var state struct {
-		Registered, Enabled bool
-		Build               string
-	}
-	if json.Unmarshal(bytes, &state) != nil || !state.Registered || !state.Enabled || state.Build != hash {
-		return errors.New("输入法注册状态尚未确认，请重新打开语言设置查看。")
-	}
-	return nil
+	return installTSF(dll, hash, func(args ...string) ([]byte, error) {
+		return helperCommand(helper, args...)
+	}, func(args []string) error { return elevated(ctx, helper, args) })
 }
+
 func Remove(resources string) error {
 	helper := filepath.Join(resources, "ime", "arion-ime.exe")
 	if _, err := os.Stat(helper); os.IsNotExist(err) {

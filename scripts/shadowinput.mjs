@@ -25,7 +25,8 @@ function run(command, args, env = process.env, cwd = root) {
 }
 if (mode === 'check') {
   run('go', ['run', './apps/desktop/cmd/shadowinput-icon', '-check']);
-  run('go', ['test', '-race', './packages/core/...', './apps/desktop/infrastructure/chatgptplan', './apps/desktop/infrastructure/localwriting', './apps/desktop/infrastructure/llm/...', './apps/desktop/infrastructure/rewriting', './apps/desktop/infrastructure/provision', './apps/desktop/cmd/arion-llm', './apps/desktop/infrastructure/writingprefs', './apps/desktop/infrastructure/inputcandidate', './apps/desktop/infrastructure/shadowime', './apps/desktop/ui/shared/writing', './apps/desktop/internal/oauthloopback', './apps/desktop/internal/shadowinput', './apps/desktop/ui/features/writing', './apps/desktop/ui/shared/copy']);
+  run(process.execPath, ['scripts/test-shadowinput-candidates.mjs']);
+  run('go', ['test', '-race', './packages/core/...', './apps/desktop/cmd/shadowinput-icon', './apps/desktop/infrastructure/chatgptplan', './apps/desktop/infrastructure/localwriting', './apps/desktop/infrastructure/llm/...', './apps/desktop/infrastructure/rewriting', './apps/desktop/infrastructure/provision', './apps/desktop/cmd/arion-llm', './apps/desktop/infrastructure/writingprefs', './apps/desktop/infrastructure/inputcandidate', './apps/desktop/infrastructure/shadowime', './apps/desktop/ui/shared/writing', './apps/desktop/internal/oauthloopback', './apps/desktop/internal/shadowinput', './apps/desktop/ui/features/writing', './apps/desktop/ui/shared/copy']);
   run('go', ['vet', source, './apps/desktop/infrastructure/chatgptplan', './apps/desktop/internal/shadowinput']);
   run(process.execPath, ['scripts/check-repository.mjs']);
 } else if (mode === 'dev') {
@@ -106,8 +107,8 @@ if (mode === 'check') {
 ${target === 'macos' ? 'macOS 14+ / Apple silicon (arm64). Move shadowinput.app to Applications.\n仅支持 Apple 芯片。打开 DMG（或解压 ZIP），将 shadowinput.app 移到 Applications。\nAd hoc signed; no Developer ID signing or Apple notarization.\n本包尚无 Developer ID 签名或公证，系统可能阻止打开。\nSee https://support.apple.com/102445 for Apple\'s app-opening guidance.' : 'Windows x64. Run the setup EXE; open shadowinput from the Start menu. For the portable ZIP, extract the entire folder and launch shadowinput.exe.\n运行 setup.exe 安装后，从开始菜单打开 shadowinput。便携 ZIP 请完整解压后运行 shadowinput.exe。\nNo publisher signature. Native Windows behavior is not yet verified.\n本包尚无发布者签名，Windows 原生运行仍待验收。'}
 
 Install the system input method from Input method settings, then switch to shadowinput in the OS input menu.
-Experimental IME: installed macOS selection/typing and Windows native behavior have not passed acceptance. API registration success is not proof of enablement.
-实验性输入法：macOS 的系统切换、实际打字以及 Windows 原生使用尚未通过验收；注册接口成功不等于系统已启用。
+Experimental IME: macOS discovery and selection are confirmed; full editor/AI candidate behavior and Windows native use still need acceptance.
+实验性输入法：macOS 已确认系统发现和选中，完整编辑器 / AI 候选及 Windows 原生使用仍待验收。
 Type Pinyin directly in your editor. Space/numbers select ordinary candidates; Tab accepts the separate AI candidate.
 Automatic AI candidates require explicit enablement and the desktop app running with a ready model.
 在“输入法设置”安装 / 启用后，从系统输入菜单切换到 shadowinput。
