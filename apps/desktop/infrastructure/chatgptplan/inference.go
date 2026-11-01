@@ -104,7 +104,9 @@ func (c *Client) Generate(ctx context.Context, r domain.WritingRequest, preview 
 		return "", err
 	}
 	defer res.Body.Close()
-	if !strings.HasPrefix(res.Header.Get("Content-Type"), "text/event-stream") {
+	// The direct plan route can omit Content-Type on a successful response.
+	// Validate its body through the same bounded SSE parser and completion gate.
+	if contentType := res.Header.Get("Content-Type"); contentType != "" && !strings.HasPrefix(contentType, "text/event-stream") {
 		return "", ErrIncomplete
 	}
 	return readStream(res.Body, preview)
