@@ -1,6 +1,15 @@
 # shadowinput
 
-shadowinput is an AGPL-3.0 derivative of [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion), based on upstream commit `b33542061b4c70c7940676f21c2a9afb6e5f1e2a` (0.1.0-alpha.20). Original copyright, license, third-party notices, source history and the maintained MyGo snapshot are retained. The source repository is [simpledavid/shadowinput-desktop](https://github.com/simpledavid/shadowinput-desktop), with `main` as its publication branch. `origin` points to that repository and `upstream` to Arion. The repository name distinguishes this desktop project from the owner's separate ShadowInput browser extension; the product name remains shadowinput. No binary release has been published.
+shadowinput is an AGPL-3.0 derivative of [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion), based on upstream commit `b33542061b4c70c7940676f21c2a9afb6e5f1e2a` (0.1.0-alpha.20). Original copyright, license, third-party notices, source history and the maintained MyGo snapshot are retained. The source repository is [simpledavid/shadowinput-desktop](https://github.com/simpledavid/shadowinput-desktop), with `main` as its publication branch. `origin` points to that repository and `upstream` to Arion. The repository name distinguishes this desktop project from the owner's separate ShadowInput browser extension; the product name remains shadowinput.
+
+## Downloads
+
+The first downloadable development preview is [v0.1.0-preview.1](https://github.com/simpledavid/shadowinput-desktop/releases/tag/v0.1.0-preview.1). These are ZIP archives, not signed installers:
+
+- [macOS Apple silicon](https://github.com/simpledavid/shadowinput-desktop/releases/download/v0.1.0-preview.1/shadowinput-v0.1.0-preview.1-macos-arm64.zip): macOS 14 or later; extract and move `shadowinput.app` to Applications. Ad hoc signed only, without Developer ID signing or Apple notarization. macOS may block opening; consult [Apple's guidance](https://support.apple.com/102445).
+- [Windows x64](https://github.com/simpledavid/shadowinput-desktop/releases/download/v0.1.0-preview.1/shadowinput-v0.1.0-preview.1-windows-x64.zip): extract the entire folder and launch `shadowinput.exe`. No publisher signature; built by cross-compilation and not yet accepted on a Windows host.
+
+The release includes SHA-256 checksums and the exact corresponding source archive. Intel Mac and Windows ARM packages are not provided. Real ChatGPT account authorization, inference and external-editor delivery remain unverified; downloading a preview does not establish those capabilities.
 
 ## Product
 
@@ -50,6 +59,8 @@ macOS builds require Xcode command-line tools and produce an ad hoc signed `.app
 
 GitHub Actions is disabled in this source repository while the retained Arion workflows await adaptation to the independent shadowinput entry point. Local checks and builds remain available through the commands above.
 
+For a release, run checks, commit the source, and create the intended version tag at `HEAD`. Then use `node scripts/shadowinput.mjs package macos <tag>` and `node scripts/shadowinput.mjs package windows <tag>`. Packaging requires a clean checkout and matching tag, rebuilds each target into a fresh directory, records the source commit and actual Go toolchain in `BUILD-INFO.json`, and produces ZIP archives plus individual checksums under `apps/desktop/build/shadowinput/releases`. Packaging is supported on macOS and Windows; macOS builds require a Mac. Publish the tagged corresponding source (`git archive`), combined checksums, and both ZIPs together as a GitHub prerelease. No automatic updater is enabled.
+
 ## Validation and remaining acceptance
 
 Local tests exercise signed test identities, invalid state/nonce/audience/signature/expiry, declined/missing plan grants, serialized refresh rotation, truncated/error SSE responses, input limits and disabled delivery of partial previews. Tests use synthetic local services and do not prove real ChatGPT sign-in or plan usage. UI snapshots use synthetic content.
@@ -58,6 +69,6 @@ Required manual acceptance: complete browser login with an eligible account, ver
 
 ## License and notices
 
-shadowinput modifications are distributed under the repository's [AGPL-3.0 license](../../LICENSE). Preserve AstraFoundry and other upstream notices. MyGo is retained with its [license](../../third_party/mygo/LICENSE); OIDC verification uses [go-oidc](https://github.com/coreos/go-oidc) and [go-jose](https://github.com/go-jose/go-jose), both Apache-2.0. Icons retain the upstream ISC/MIT notices under `ui/shared/icons/svg`. Before public binary distribution, publish the exact corresponding shadowinput source and include the complete dependency notices. Upstream Arion's URL alone does not provide the new modifications.
+shadowinput modifications are distributed under the repository's [AGPL-3.0 license](../../LICENSE). Preserve AstraFoundry and other upstream notices. MyGo is retained with its [license](../../third_party/mygo/LICENSE); OIDC verification uses [go-oidc](https://github.com/coreos/go-oidc) and [go-jose](https://github.com/go-jose/go-jose), both Apache-2.0. Icons retain the upstream ISC/MIT notices under `ui/shared/icons/svg`. Builds stage the target's Go module dependency notices (including nested notices), Go's license/patent grant, icon notices and the root AGPL license. The shared collector is also used by the retained Arion build. No speech runtimes or bundled speech fonts are linked by this entry point. Public binary distribution must include the exact corresponding tagged shadowinput source; upstream Arion's URL alone does not provide the new modifications.
 
 See the [writing specification](../../specs/011-writing.md) and [runtime decision](../decisions/036-shadowinput-runtime.md).

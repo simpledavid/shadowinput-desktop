@@ -9,7 +9,7 @@ Keyboard-first AI writing for **macOS and Windows**, built with Go + MyGo and ba
 - Copy text, press **Cmd/Ctrl+Shift+J**, generate, review, then copy or paste the completed result back.
 - English and Simplified Chinese UI; separate app settings and credentials; no microphone or speech-model setup in the shadowinput entry point.
 
-**Development preview:** local tests, a macOS arm64 build and a Windows x64 cross-build pass. Real ChatGPT account authorization and inference, native Windows behavior and external-editor delivery still require acceptance testing. Inline completion, direct selection capture, change comparison and personal style profiles are proposed features, not shipped functionality. No signed installer or binary release is available.
+**Development preview:** local tests, a macOS arm64 build and a Windows x64 cross-build pass. [Download preview ZIPs](docs/project/shadowinput.md#downloads) for both platforms; signed installers are not available. Real ChatGPT account authorization and inference, native Windows behavior and external-editor delivery still require acceptance testing. Inline completion, direct selection capture, change comparison and personal style profiles are proposed features, not shipped functionality.
 
 ```sh
 node scripts/shadowinput.mjs check

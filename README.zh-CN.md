@@ -9,7 +9,7 @@
 - 复制文字，按 **Cmd/Ctrl+Shift+J** 唤起，生成并检查结果，再复制或粘贴完整结果。
 - 提供英文和简体中文界面，使用独立设置及凭据；shadowinput 入口无需麦克风或语音模型。
 
-**开发预览版：**本地测试、macOS arm64 构建和 Windows x64 交叉编译已通过。真实 ChatGPT 登录与推理、Windows 原生运行以及跨应用粘贴仍需验收。行内补全、直接获取选区、修改对比和个人风格属于规划功能，尚未实现。当前没有已签名安装包或二进制发布版本。
+**开发预览版：**本地测试、macOS arm64 构建和 Windows x64 交叉编译已通过。可[下载双端预览版 ZIP](docs/project/shadowinput.md#downloads)，尚无已签名安装包。真实 ChatGPT 登录与推理、Windows 原生运行以及跨应用粘贴仍需验收。行内补全、直接获取选区、修改对比和个人风格属于规划功能，尚未实现。
 
 ```sh
 node scripts/shadowinput.mjs check
