@@ -1,5 +1,5 @@
 // Command shadowinput-icon exports platform icon containers from the canonical
-// SVG already used by the website. It does not redraw or alter the brand mark.
+// SVG already used by the website, plus the monochrome system-menu template.
 package main
 
 import (
@@ -45,6 +45,22 @@ func main() {
 	assets["apps/shadowinput-site/public/favicon.svg"] = svg
 	assets["apps/shadowinput-site/public/favicon.ico"] = assets[filepath.Join(base, "shadowinput.ico")]
 	assets["apps/shadowinput-site/public/apple-touch-icon.png"] = pngs[180]
+	menuSVG, err := os.ReadFile(filepath.Join(base, "menu.svg"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	menu := ui.MustParseSVG(menuSVG)
+	for _, size := range []int{16, 32} {
+		img := ui.NewTester(func(c *ui.Context) {
+			c.Root().Background(ui.Transparent)
+			ui.Image(c, menu).Size(float32(size), float32(size))
+		}, size, size).Image()
+		var b bytes.Buffer
+		if err := png.Encode(&b, img); err != nil {
+			log.Fatal(err)
+		}
+		assets[filepath.Join(base, fmt.Sprintf("menu-%d.png", size))] = b.Bytes()
+	}
 	for name, data := range assets {
 		if *check {
 			current, err := os.ReadFile(name)
