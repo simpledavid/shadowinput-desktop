@@ -5,6 +5,8 @@
   "license": "AGPL-3.0-only",
   "description": "Native desktop voice input foundation and specifications.",
   "scripts": {
+    "extension:check": "pnpm --filter @shadowinput/extension check",
+    "extension:build": "pnpm --filter @shadowinput/extension build",
     "check": "node scripts/check-repository.mjs",
     "i18n:check": "node scripts/check-i18n.mjs",
     "docs:check": "node scripts/check-repository.mjs",

@@ -53,4 +53,6 @@ See [specs](../../specs/README.md), [research](../research/README.md), [reposito
 
 ## shadowinput derivative
 
+- [Browser extension](shadowinput-extension.md) — standalone translation preview and verification limits.
+
 - [shadowinput](shadowinput.md) — keyboard-first native writing runtime and acceptance.

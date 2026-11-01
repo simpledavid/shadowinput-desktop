@@ -62,7 +62,7 @@ If an agent tool restricts access to the current project, add the private checko
 - [`docs/frontend/public-api.md`](docs/frontend/public-api.md) — public API and re-export rules.
 - [`docs/frontend/import-rules.md`](docs/frontend/import-rules.md) — cross-layer and cross-slice import rules.
 - [`docs/frontend/i18n.md`](docs/frontend/i18n.md) — interface languages, typed copy keys, formatting and completeness gates.
-- [`docs/frontend/site.md`](docs/frontend/site.md) and [`docs/frontend/blog.md`](docs/frontend/blog.md) — the `apps/site` marketing site (the only TypeScript/React code) and its blog.
+- [`docs/frontend/site.md`](docs/frontend/site.md) and [`docs/frontend/blog.md`](docs/frontend/blog.md) — the React marketing site and its blog; [the browser extension](docs/project/shadowinput-extension.md) uses TypeScript with native DOM/CSS.
 - [`docs/frontend/ui-patterns.md`](docs/frontend/ui-patterns.md) — semantic styling, no hardcoded copy, no redundant copy.
 - [`docs/quality/agent-skills.md`](docs/quality/agent-skills.md) — Agent Skills for UI craft, motion, and anti-slop. Apply them when writing or reviewing UI.
 

@@ -8,6 +8,10 @@ Keyboard-first AI writing for **macOS and Windows**, built with Go + MyGo and ba
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
+The independent [shadowinput Chrome extension](docs/project/shadowinput-extension.md)
+adds bilingual reading and selection/input translation. It is an experimental ZIP;
+real browser authorization and inference remain unverified. No desktop companion is required.
+
 - Offline Qwen3.5-2B Q4_K_M writing: explicitly download about 1.28 GB once, then start locally without login or an API key.
 - Polish, translate, rewrite and continue a draft with a native desktop editor.
 - Sign in with ChatGPT to request eligible plan usage, with encrypted local credential storage and account-specific model discovery.

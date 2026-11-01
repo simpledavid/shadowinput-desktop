@@ -75,12 +75,6 @@ copyButton.addEventListener('click', async () => {
   }
 });
 
-document.querySelector('#try-demo').addEventListener('click', event => {
-  event.preventDefault();
-  document.querySelector('#demo').scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
-  tabs.find(tab => tab.dataset.mode === mode).focus({ preventScroll: true });
-});
-
 if (/Windows/i.test(navigator.userAgent)) {
   document.querySelectorAll('[data-modifier]').forEach(key => { key.textContent = 'Ctrl'; key.classList.add('windows'); });
 }

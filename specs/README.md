@@ -27,3 +27,4 @@ Each acceptance scenario has a stable ID. New tests and task handoffs cite these
 
 - [011 Keyboard-first writing](011-writing.md) — shadowinput derivative requirements.
 - [012 Local input phrases](012-native-phrases.md) — shadowinput native continuation and cancellation requirements.
+- [013 Browser translation](013-browser-translation.md) — standalone Chrome preview and feature coverage.

@@ -60,3 +60,4 @@ decisions/
 ```
 
 - [036 Independent shadowinput runtime](036-shadowinput-runtime.md).
+- [037 Standalone browser extension](037-standalone-browser-extension.md).

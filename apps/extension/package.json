@@ -1,0 +1,19 @@
+{
+  "name": "@shadowinput/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "build": "node scripts/compile.mjs && node scripts/build.mjs",
+    "test": "node scripts/compile.mjs && node --test tests/*.test.mjs",
+    "check": "node scripts/compile.mjs && node --test tests/*.test.mjs && node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "0.3.7",
+    "esbuild": "0.25.12",
+    "fflate": "0.8.2",
+    "jsdom": "26.1.0",
+    "typescript": "5.9.3"
+  }
+}
