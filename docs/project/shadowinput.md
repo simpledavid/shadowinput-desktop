@@ -15,7 +15,7 @@ The release includes SHA-256 checksums and the exact corresponding source archiv
 
 ## Product
 
-The current development branch also contains an experimental **system Pinyin input method with optional AI candidates**, with setup as the default app page. See [input-method workflow, build prerequisites and acceptance status](shadowinput-ime.md). Installed macOS source discovery, enablement and selection are confirmed; full editor/AI candidate acceptance remains pending. Windows TSF is cross-built but not native-tested. These changes are not in the preview.5 downloads above. The following writing workflow remains available as the separate long-form tool. Its Generate-only privacy description applies to that tool; enabling automatic cloud candidates also sends the current composition as described in the input-method guide.
+The current development branch also contains an experimental **system Pinyin input method with optional AI candidates**, with setup as the default app page. See [input-method workflow, build prerequisites and acceptance status](shadowinput-ime.md). Installed macOS source discovery, enablement and selection are confirmed; full editor/AI candidate acceptance remains pending. Windows TSF is cross-built but not native-tested. These changes are not in the preview.5 downloads above. The following writing workflow remains available as the separate long-form tool. Its Generate-only privacy description applies to that tool. Automatic input-method phrases now use only the local model and recent committed words as described in the input-method guide.
 
 The [WeType comparison](../research/shadowinput-wetype.md) records competitor evidence and proposed keyboard-writing priorities separately from the implemented scope below.
 

@@ -109,11 +109,11 @@ ${target === 'macos' ? 'macOS 14+ / Apple silicon (arm64). Move shadowinput.app 
 Install the system input method from Input method settings, then switch to shadowinput in the OS input menu.
 Experimental IME: macOS discovery and selection are confirmed; full editor/AI candidate behavior and Windows native use still need acceptance.
 实验性输入法：macOS 已确认系统发现和选中，完整编辑器 / AI 候选及 Windows 原生使用仍待验收。
-Type Pinyin directly in your editor. Space/numbers select ordinary candidates; Tab accepts the separate AI candidate.
-Automatic AI candidates require explicit enablement and the desktop app running with a ready model.
+Type Pinyin directly in your editor. Space/numbers commit words; Tab appends the local AI phrase after a pause.
+Automatic AI phrases require explicit enablement and the desktop app running with a ready local model; ChatGPT is used only for explicit writing requests.
 在“输入法设置”安装 / 启用后，从系统输入菜单切换到 shadowinput。
 直接输入拼音：空格 / 数字选普通候选；Tab 采纳 AI 候选；Esc 取消。
-AI 候选默认关闭；开启后保持主程序和模型可用。ChatGPT 会接收当前组合短句及风格、词表，并消耗套餐用量。
+AI 候选默认关闭；开启后保持主程序和本地模型可用。空格上屏后稍停即联想，Tab 只追加短语。自动联想不发送给 ChatGPT，不消耗套餐用量。
 长文工具仍支持：选中文字 → Cmd/Ctrl+Shift+J → 生成 → 审阅 → 应用修改。
 If selection is unavailable, use Paste original or type a draft; copy the result manually.
 无法读取选区时，请用“粘贴原文”或手动输入，完成后复制结果。
