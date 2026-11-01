@@ -50,3 +50,24 @@ test('cancel then immediate retry owns a new run; the old response cannot stop o
   assert.ok(document.querySelector('[data-shadowinput="translation"]').shadowRoot.textContent.includes('New translation'));
   await reader.action('toggle');dom.window.close();
 });
+
+test('the webpage error card preserves safe translation diagnostics and stops further work',async()=>{
+  const dom=environment(),roots=[];
+  const attach=dom.window.Element.prototype.attachShadow;
+  dom.window.Element.prototype.attachShadow=function(options){const root=attach.call(this,options);roots.push(root);return root;};
+  const {DiagnosedError}=await import('../build/shared/diagnostics.js');
+  let cancelled=0;
+  const reader=new Reader(dom.window.document,async type=>{
+    if(type==='contentConfig')return config;
+    if(type==='translateBlock')throw new DiagnosedError({stage:'translation',code:'usage_limit',kind:'provider',reason:'subscription_sharing_usage_limit_exceeded'});
+    if(type==='cancel')cancelled++;
+  });
+  try {
+    await reader.action('toggle');
+    const message=roots[0].querySelector('[role="status"]').textContent;
+    assert.match(message,/已达到当前用量限制/);
+    assert.match(message,/subscription_sharing_usage_limit_exceeded/);
+    assert.equal(cancelled,1);
+    assert.equal(dom.window.document.querySelector('[data-shadowinput="translation"]'),null);
+  } finally {dom.window.close();}
+});

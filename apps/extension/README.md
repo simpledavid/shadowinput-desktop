@@ -26,7 +26,13 @@ restricted to trusted extension contexts. Local storage persists credentials
 across restarts but is **not OS-keychain encryption**. Content scripts receive
 only translation results and non-secret preferences.
 
-Connection errors show a fixed step, failure category and optional HTTP status.
+Connection and in-page translation errors show a fixed step, failure category,
+optional HTTP status and allowlisted provider/stream reason. Plan usage limits,
+temporary unavailability, model restrictions, refusals, output limits and missing
+completion events remain distinct. No retry or reauthorization loop is started.
+Only `response.completed` can authorize a result; its final message text is used
+when supplied, rather than requiring delta events. Empty/refused/incomplete final
+messages are never replaced with partial streamed text.
 These diagnostics exclude raw exceptions, URLs, response bodies, credentials and
 translated content. The latest callback error is held only in session storage and
 clears when sign-in starts/completes or the user signs out.
@@ -37,6 +43,11 @@ the created authorization tab's top-level navigation event. It validates state,
 PKCE, issued client ID, signed identity/nonce/account and plan scope. It never
 consumes another tab's callback. This is **not documented extension support**;
 real authorization and inference remain a release acceptance gate.
+
+After replacing an unpacked extension, reload it in Chrome's extension manager
+and refresh the webpage being translated so that both worker and content script
+use the new build. For a failure, share only the displayed diagnostic code, not
+tokens, callback URLs or a network export.
 
 ## Build
 

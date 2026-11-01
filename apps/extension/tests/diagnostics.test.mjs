@@ -54,3 +54,16 @@ test('workbench errors survive Chrome message serialization with only allowliste
     return true;
   });
 });
+
+test('page RPC retains allowlisted stream reasons and strips unknown provider details',async()=>{
+  for(const reason of ['subscription_sharing_usage_limit_exceeded','private-reason-canary']) {
+    globalThis.chrome={runtime:{async sendMessage(){return {
+      ok:false,error:'usage_limit',diagnostic:{stage:'translation',code:'usage_limit',kind:'provider',reason,message:'private-message-canary'},
+    };}}};
+    await assert.rejects(request('translateBlock'),error=>{
+      assert.equal(error.diagnostic.reason,reason.startsWith('private-')?undefined:reason);
+      assert.doesNotMatch(JSON.stringify(error),/private-/);
+      return true;
+    });
+  }
+});

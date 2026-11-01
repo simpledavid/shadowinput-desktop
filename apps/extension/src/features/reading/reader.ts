@@ -1,6 +1,7 @@
 import {copy} from '../../shared/copy.js';
 import {readingCopy} from '../../shared/reading-copy.js';
 import {errorCode} from '../../shared/errors.js';
+import {diagnosticOf,diagnosticText} from '../../shared/diagnostics.js';
 import {settings,type Settings} from '../../shared/settings.js';
 import {object,requiredString} from '../../shared/validation.js';
 import {paragraphs,originalText,annotate,restore} from './paragraphs.js';
@@ -36,7 +37,10 @@ export class Reader {
     if(automatic && config.automatic===true)await this.action('toggle');
   }
   private get text(){return readingCopy[this.config.locale];}
-  private error(error:unknown):string{return copy[this.config.locale].errors[errorCode(error)];}
+  private error(error:unknown):string {
+    const text=copy[this.config.locale];
+    return text.errors[errorCode(error)]+diagnosticText(diagnosticOf(error),text.stages);
+  }
   showError(error:unknown):void{this.panel('shadowinput').body.textContent=this.error(error);}
   private panel(title:string) {
     return card(this.document,this.config.locale,title,()=>{});
