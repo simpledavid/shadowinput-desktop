@@ -1,5 +1,6 @@
 // Reuses Arion's native IME and engine while isolating product registration/data.
 import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import {cpSync,copyFileSync,existsSync,mkdirSync,readFileSync,writeFileSync,readdirSync,rmSync,renameSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -7,6 +8,7 @@ import {buildShadowWindowsIME} from './lib/build-shadowinput-windows-ime.mjs';
 import {buildIMELearning} from './lib/build-ime-learning.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const brandAssets=path.join(root,'apps/desktop/ui/shared/shadowbrand');
+const menuIcon=`shadowinput-menu-${createHash('sha256').update(readFileSync(path.join(brandAssets,'mark.svg'))).digest('hex').slice(0,12)}.tiff`;
 const target=process.argv[2]??'macos';
 if(!['macos','windows'].includes(target))throw new Error('Choose macos or windows');
 const runtime=path.join(root,'apps/desktop/resources',target==='macos'?'darwin':'windows-amd64','keyboard','runtime.json');
@@ -47,6 +49,11 @@ const bundle=path.join(work,'ShadowInput.app');
 rmSync(bundle,{recursive:true,force:true});
 for(const dir of ['MacOS','Resources','Frameworks'])mkdirSync(path.join(bundle,'Contents',dir),{recursive:true});
 let plist=readFileSync(path.join(source,'macos/Info.plist'),'utf8').replaceAll('<string>Arion</string>','<string>shadowinput</string>');
+// macOS can default an input mode to a template even when the parent is not.
+// Preserve the yellow SI artwork at both levels and invalidate old icon URLs.
+plist=plist.replaceAll('menu_icon.tiff',menuIcon)
+ .replaceAll('<key>TISInputSourceID</key>','<key>TISIconIsTemplate</key><false/>\n        <key>TISInputSourceID</key>');
+plist=plist.replace('</dict>\n</plist>','<key>TISIconIsTemplate</key><false/>\n</dict>\n</plist>');
 plist=plist.replace('</dict>\n</plist>','<key>ArionAppIdentifier</key><string>org.shadowinput.desktop.dev</string>\n</dict>\n</plist>');
 plist=plist.replace('</dict>\n</plist>','<key>CFBundleIconFile</key><string>shadowinput.icns</string>\n</dict>\n</plist>');
 writeFileSync(path.join(bundle,'Contents/Info.plist'),plist);
@@ -74,7 +81,7 @@ const menuSlices=[16,32].map(size=>{
  run('sips',['-s','format','tiff',path.join(brandAssets,`icon-${size}.png`),'--out',tiff]);
  return tiff;
 });
-run('tiffutil',['-cathidpicheck',...menuSlices,'-out',path.join(bundle,'Contents/Resources/menu_icon.tiff')]);
+run('tiffutil',['-cathidpicheck',...menuSlices,'-out',path.join(bundle,'Contents/Resources',menuIcon)]);
 for(const file of [path.join(bundle,'Contents/Frameworks/librime.1.dylib'),bundle])run('/usr/bin/codesign',['--force','--sign','-',file]);
 run('/usr/bin/codesign',['--verify','--deep','--strict',bundle]);
 mkdirSync(path.dirname(outputBundle),{recursive:true});
