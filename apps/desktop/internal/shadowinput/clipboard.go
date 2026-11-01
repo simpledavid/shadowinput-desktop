@@ -17,11 +17,19 @@ func (a *app) capture() {
 	a.releaseTarget()
 	a.s.AccessRequired = needsAccess()
 	if !a.s.AccessRequired {
-		a.target = clipboardos.CaptureTarget()
+		selected := clipboardos.CaptureWritingTarget()
+		if selected != nil {
+			a.changed()
+			a.target = selected
+			a.s.HasTarget = true
+			a.s.Source = selected.Text()
+			a.s.Notice = copy.WriteSelectionCaptured
+		}
 	}
-	a.s.HasTarget = a.target != nil
-	a.importText()
-	a.show()
+	if a.target == nil {
+		a.s.Notice = copy.WriteSelectionUnavailable
+	}
+	a.showPanel()
 }
 
 func (a *app) importText() {
@@ -33,13 +41,14 @@ func (a *app) importText() {
 		a.s.Failure = copy.WriteClipboardError
 		return
 	}
+	a.releaseTarget()
 	a.changed()
 	a.s.Source = string(b)
-	a.win.Invalidate()
+	a.invalidate()
 }
 
 func (a *app) copyResult() {
-	if !a.s.Completed || a.s.Busy {
+	if !a.s.CanDeliver() {
 		return
 	}
 	if err := mygo.Clipboard.Write(transfer.TextData(a.s.Output)); err != nil {
@@ -55,7 +64,7 @@ func (a *app) copyResult() {
 }
 
 func (a *app) pasteResult() {
-	if !a.s.Completed || a.s.Busy || a.target == nil {
+	if !a.s.CanDeliver() || a.target == nil {
 		return
 	}
 	target := a.target
@@ -66,7 +75,7 @@ func (a *app) pasteResult() {
 	job := a.job
 	a.s.Busy = true
 	a.s.Failure = ""
-	a.win.Hide()
+	a.hideForDelivery()
 	fail := func(key copy.Key) { target.Close(); a.s.Busy = false; a.s.Failure = key; a.show() }
 	if target.Activate() != nil {
 		fail(copy.WriteTargetError)

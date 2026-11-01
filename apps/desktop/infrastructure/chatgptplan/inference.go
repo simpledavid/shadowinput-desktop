@@ -37,10 +37,24 @@ func (c *Client) request(ctx context.Context, method, path string, body io.Reade
 		return nil, ErrNetwork
 	}
 	if res.StatusCode != http.StatusOK {
-		res.Body.Close()
+		defer res.Body.Close()
+		var failure struct {
+			Error struct {
+				Code string `json:"code"`
+			} `json:"error"`
+		}
+		_ = json.NewDecoder(io.LimitReader(res.Body, 16384)).Decode(&failure)
+		if failure.Error.Code == "model_not_found" || failure.Error.Code == "model_not_available" {
+			return nil, ErrModel
+		}
+		if strings.HasPrefix(failure.Error.Code, "subscription_sharing_usage_") {
+			return nil, ErrLimit
+		}
 		switch res.StatusCode {
-		case 401, 403:
+		case 401:
 			return nil, ErrAuth
+		case 403:
+			return nil, ErrPermission
 		case 429:
 			return nil, ErrLimit
 		}

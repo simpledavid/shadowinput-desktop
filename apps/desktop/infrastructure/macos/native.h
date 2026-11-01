@@ -66,6 +66,7 @@ void *arion_history_focus(int pid, int *secure, int *no_input);
 int arion_history_check(int pid, void *element);
 int arion_no_input(void);
 int arion_history_anchor(void *element, double *x, double *y, double *width, double *height);
+char *arion_writing_selection(int pid, void *element, long long *start, long long *length);
 int arion_ime_register(const char *bundle_path);
 int arion_ime_validate_payload(const char *bundle_path, const char *bundle_id);
 int arion_ime_bundle_matches(const char *bundle_path, const char *source_id);

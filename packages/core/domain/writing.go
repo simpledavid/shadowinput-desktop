@@ -9,6 +9,8 @@ import (
 // WritingRequest contains only text explicitly submitted by the user.
 type WritingRequest struct {
 	Task, Text, Instruction, Language, Model string
+	Style                                    *WritingStyle
+	Terms                                    []string
 }
 
 var ErrWritingInput = errors.New("invalid writing input")
@@ -23,6 +25,12 @@ func (r WritingRequest) Validate() error {
 		return ErrWritingInput
 	}
 	if r.Task == "translate" && strings.TrimSpace(r.Language) == "" {
+		return ErrWritingInput
+	}
+	if r.Style != nil && r.Style.Validate() != nil {
+		return ErrWritingInput
+	}
+	if (WritingProfile{Version: 1, Terms: r.Terms}).Validate() != nil {
 		return ErrWritingInput
 	}
 	return nil
@@ -43,6 +51,9 @@ func WritingInstructions(r WritingRequest) string {
 	}
 	if strings.TrimSpace(r.Instruction) != "" {
 		base += "\nAdditional user requirements: " + r.Instruction
+	}
+	if r.Style != nil || len(r.Terms) > 0 {
+		base += writingPreferences(r)
 	}
 	return base
 }

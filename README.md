@@ -6,10 +6,11 @@ Keyboard-first AI writing for **macOS and Windows**, built with Go + MyGo and ba
 
 - Polish, translate, rewrite and continue a draft with a native desktop editor.
 - Sign in with ChatGPT to request eligible plan usage, with encrypted local credential storage and account-specific model discovery.
-- Copy text, press **Cmd/Ctrl+Shift+J**, generate, review, then copy or paste the completed result back.
+- Select text in a supported editor and press **Cmd/Ctrl+Shift+J** for a compact panel. Generate, inspect changes and apply, or import/type a draft and copy the result.
+- Local style cards, glossary and per-task defaults; advisory number/date/term/commitment checks require acknowledgment when flagged.
 - English and Simplified Chinese UI; separate app settings and credentials; no microphone or speech-model setup in the shadowinput entry point.
 
-**Development preview:** local tests, a macOS arm64 build and a Windows x64 cross-build pass. [Download preview ZIPs](docs/project/shadowinput.md#downloads) for both platforms; signed installers are not available. Real ChatGPT account authorization and inference, native Windows behavior and external-editor delivery still require acceptance testing. Inline completion, direct selection capture, change comparison and personal style profiles are proposed features, not shipped functionality.
+**Development preview:** local tests, a macOS arm64 build and a Windows x64 cross-build pass. [Download preview ZIPs](docs/project/shadowinput.md#downloads) for both platforms; signed installers are not available. Real ChatGPT account authorization and inference, native Windows behavior and external-editor delivery still require acceptance testing. Selection, diff and style features are implemented but still need native editor acceptance. Review checks are advisory and protect names only when listed in the glossary. Inline prediction, external undo and local model integration are not implemented.
 
 ```sh
 node scripts/shadowinput.mjs check

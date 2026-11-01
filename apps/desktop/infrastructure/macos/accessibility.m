@@ -165,3 +165,31 @@ int arion_no_input(void) {
         return noInput;
     }
 }
+
+// Explicit writing invocation reads only the selected range, never AXValue.
+char *arion_writing_selection(int pid, void *element, long long *start, long long *length) {
+    if (!element || !arion_history_check(pid, element)) return NULL;
+    @autoreleasepool {
+        AXUIElementRef field = (AXUIElementRef)element;
+        AXUIElementSetMessagingTimeout(field, 0.2f);
+        id role = ax_attribute(field, kAXRoleAttribute);
+        if (![role isEqual:(__bridge NSString *)kAXTextFieldRole] &&
+            ![role isEqual:(__bridge NSString *)kAXTextAreaRole] &&
+            ![role isEqual:(__bridge NSString *)kAXComboBoxRole]) return NULL;
+        id selection = ax_attribute(field, kAXSelectedTextRangeAttribute);
+        CFRange range;
+        if (!selection || CFGetTypeID((__bridge CFTypeRef)selection) != AXValueGetTypeID() ||
+            !AXValueGetValue((__bridge AXValueRef)selection, kAXValueCFRangeType, &range) ||
+            range.location < 0 || range.length <= 0 || range.length > 64000) return NULL;
+        id selected = ax_attribute(field, kAXSelectedTextAttribute);
+        if (![selected isKindOfClass:NSString.class] || [(NSString *)selected length] != range.length ||
+            [(NSString *)selected lengthOfBytesUsingEncoding:NSUTF8StringEncoding] > 64000) return NULL;
+        id current = ax_attribute(field, kAXSelectedTextRangeAttribute);
+        if (!current || !CFEqual((__bridge CFTypeRef)selection, (__bridge CFTypeRef)current) ||
+            !arion_history_check(pid, element)) return NULL;
+        *start = range.location; *length = range.length;
+        const char *text = [(NSString *)selected UTF8String];
+        if (!text || strlen(text) != [(NSString *)selected lengthOfBytesUsingEncoding:NSUTF8StringEncoding]) return NULL;
+        return strdup(text);
+    }
+}

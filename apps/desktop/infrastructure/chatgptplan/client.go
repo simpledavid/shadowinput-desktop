@@ -29,6 +29,7 @@ var (
 	ErrNetwork    = errors.New("chatgpt request failed")
 	ErrIncomplete = errors.New("chatgpt response did not complete")
 	ErrLimit      = errors.New("chatgpt usage limit reached")
+	ErrModel      = errors.New("chatgpt model unavailable")
 )
 
 type Tokens struct {
@@ -180,6 +181,18 @@ func (c *Client) Logout() error {
 	s := c.session
 	s.Tokens = Tokens{}
 	s.ExpiresAt = time.Time{}
+	if err := c.store.Save(s); err != nil {
+		return err
+	}
+	c.session = s
+	return nil
+}
+
+// SwitchAccount clears the account-bound registration but preserves this host.
+func (c *Client) SwitchAccount() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	s := Session{HostID: c.session.HostID}
 	if err := c.store.Save(s); err != nil {
 		return err
 	}

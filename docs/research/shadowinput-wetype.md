@@ -30,15 +30,15 @@ The inspected official notes do not document bring-your-own ChatGPT sign-in, edi
 
 | Priority | Experience | Concrete benefit | Current shadowinput state |
 | --- | --- | --- | --- |
-| First | Continue with ChatGPT, list authorized models, explain plan usage and expose usage management | Eligible subscribers can start without creating an API key | OAuth, encrypted credentials, model discovery and usage link implemented; real account acceptance pending |
-| First | Select text, invoke a compact panel, choose an action, review and apply | Reduce navigation away from the user's current editor | Clipboard import, shortcut, full editor and guarded paste implemented; direct selection and compact panel proposed |
-| First | Show changes beside the original; preserve names, numbers and factual commitments | Make edits easy to inspect and reduce unwanted rewriting | Complete-result preview implemented; diff, partial acceptance and transaction-safe external undo proposed |
-| Next | Editable personal terms and style cards, with optional application defaults | Preserve product names and reuse preferences such as concise, natural or formal | Proposed; no automatic ChatGPT memory import |
+| First | Continue with ChatGPT, list authorized models, explain plan usage and expose usage management | Eligible subscribers can start without creating an API key | OAuth, encrypted credentials, model discovery, account switching, recovery actions and usage link implemented; real account acceptance pending |
+| First | Select text, invoke a compact panel, choose an action, review and apply | Reduce navigation away from the user's current editor | AX/UIA selected-range adapters, compact panel and guarded application implemented; native editor acceptance pending |
+| First | Show changes beside the original; preserve names, numbers and factual commitments | Make edits easy to inspect and reduce unwanted rewriting | Diff and advisory number/date/glossary/commitment review implemented; partial acceptance and external undo remain proposed |
+| First | Editable personal terms and style cards, with optional application defaults | Preserve product names and reuse preferences such as concise, natural or formal | Editable local styles, glossary and per-operation defaults implemented; per-application defaults proposed; no ChatGPT memory import |
 | Next | Shortcut actions such as concise rewrite, English email, natural reply and explain changes | Turn repeated writing intentions into predictable commands | Four generic operations implemented; reusable action presets proposed |
 | Later | Optional short completion near the caret, with explicit acceptance | Reduce typing while retaining control | Proposed; current continuation produces a complete draft in the editor, not inline completion |
 | Later | Import/export community action templates and optional additional providers | Let the open-source community adapt the tool to specific work | Proposed; templates should be declarative and reviewable |
 
-The first release should emphasize account connection and a reliable, inspectable editing loop. Personal style is the next distinctive capability. Full IME replacement, continuous prediction, device sync, voice capture, skins and a plugin marketplace should not delay acceptance of that loop. Both operating systems remain in scope at every stage.
+The first release should emphasize account connection and a reliable, inspectable editing loop. Personal style joins the inspectable writing loop; comparative quality still requires evaluation. Full IME replacement, continuous prediction, device sync, voice capture, skins and a plugin marketplace should not delay acceptance of that loop. Both operating systems remain in scope at every stage.
 
 ## Proposed primary interaction
 

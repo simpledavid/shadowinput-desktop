@@ -20,7 +20,7 @@ function run(command, args, env = process.env) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 if (mode === 'check') {
-  run('go', ['test', '-race', './packages/core/...', './apps/desktop/infrastructure/chatgptplan', './apps/desktop/internal/oauthloopback', './apps/desktop/internal/shadowinput', './apps/desktop/ui/features/writing', './apps/desktop/ui/shared/copy']);
+  run('go', ['test', '-race', './packages/core/...', './apps/desktop/infrastructure/chatgptplan', './apps/desktop/infrastructure/writingprefs', './apps/desktop/ui/shared/writing', './apps/desktop/internal/oauthloopback', './apps/desktop/internal/shadowinput', './apps/desktop/ui/features/writing', './apps/desktop/ui/shared/copy']);
   run('go', ['vet', source, './apps/desktop/infrastructure/chatgptplan', './apps/desktop/internal/shadowinput']);
   run(process.execPath, ['scripts/check-repository.mjs']);
 } else if (mode === 'dev') {
@@ -64,10 +64,14 @@ if (mode === 'check') {
 
 ${target === 'macos' ? 'macOS 14+ / Apple silicon (arm64). Move shadowinput.app to Applications.\n仅支持 Apple 芯片。解压后将 shadowinput.app 移到 Applications。\nAd hoc signed; no Developer ID signing or Apple notarization.\n本包尚无 Developer ID 签名或公证，系统可能阻止打开。\nSee https://support.apple.com/102445 for Apple\'s app-opening guidance.' : 'Windows x64. Extract the entire folder and launch shadowinput.exe.\n解压整个文件夹后运行 shadowinput.exe。\nNo publisher signature. Native Windows behavior is not yet verified.\n本包尚无发布者签名，Windows 原生运行仍待验收。'}
 
-Copy text, press Cmd/Ctrl+Shift+J, choose a task, generate, review, then copy.
-复制文字 → Cmd/Ctrl+Shift+J → 选择操作 → 生成 → 审阅 → 复制。
-Paste back on macOS requires Accessibility permission.
-macOS 的“粘贴回原应用”需要辅助功能权限。
+Select text in a supported editor, press Cmd/Ctrl+Shift+J, generate, review, then apply.
+在支持的编辑器中选中文字 → Cmd/Ctrl+Shift+J → 生成 → 审阅 → 应用修改。
+If selection is unavailable, use Paste original or type a draft; copy the result manually.
+无法读取选区时，请用“粘贴原文”或手动输入，完成后复制结果。
+Flagged changes require review. Styles, terms and task defaults stay on this device.
+数字、日期、词表及承诺的可疑变化需要确认；风格、词表和操作默认值保存在本机。
+macOS selection and Apply changes require Accessibility permission.
+macOS 的选区读取和“应用修改”需要辅助功能权限。
 Real ChatGPT login, account eligibility and inference still need acceptance testing.
 真实 ChatGPT 登录、账号资格与推理仍待验收。
 
@@ -86,7 +90,7 @@ Based on AstraFoundry/Arion. Distributed under AGPL-3.0; upstream and dependency
 <key>CFBundleIdentifier</key><string>org.shadowinput.desktop.dev</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>${version.slice(1).split('-')[0]}</string>
-<key>CFBundleVersion</key><string>1</string>
+<key>CFBundleVersion</key><string>${version.match(/preview\.(\d+)$/)?.[1] ?? "1"}</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
 </dict></plist>\n`);

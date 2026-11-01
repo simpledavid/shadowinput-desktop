@@ -31,6 +31,12 @@ type Target interface {
 	Close()
 }
 
+// WritingTarget binds a nonempty selection to its original native range.
+type WritingTarget interface {
+	Target
+	Text() string
+}
+
 func Read(limit int64) (domain.ClipPayload, error) {
 	formats := mygo.Clipboard.Formats()
 	format, err := captureFormat(formats)
