@@ -17,9 +17,11 @@ import (
 	"arion.local/desktop/infrastructure/browser"
 	"arion.local/desktop/infrastructure/chatgptplan"
 	"arion.local/desktop/infrastructure/clipboardos"
+	"arion.local/desktop/infrastructure/inputcandidate"
 	"arion.local/desktop/infrastructure/llm/engine"
 	"arion.local/desktop/infrastructure/localwriting"
 	"arion.local/desktop/infrastructure/rewriting"
+	"arion.local/desktop/infrastructure/shadowime"
 	"arion.local/desktop/ui/pages/writing"
 	"arion.local/desktop/ui/shared/copy"
 	state "arion.local/desktop/ui/shared/writing"
@@ -28,6 +30,7 @@ import (
 )
 
 type app struct {
+	candidates        *inputcandidate.Server
 	s                 state.State
 	client            *chatgptplan.Client
 	win               *mygo.Window
@@ -55,6 +58,8 @@ func Run() error {
 		return err
 	}
 	a := &app{s: state.NewState(), directory: filepath.Join(base, state.Name)}
+	a.s.InputPage = true
+	a.s.Locale = copy.SimplifiedChinese
 	a.loadProfile()
 	a.loadPreferences()
 	mygo.App.WhenReady(func() { a.ready() })
@@ -71,17 +76,26 @@ func (a *app) ready() {
 			a.hide()
 		}
 	})
-	a.win.OnFocus(func() { a.s.AccessRequired = needsAccess(); a.invalidate() })
+	a.win.OnFocus(func() { a.s.AccessRequired = needsAccess(); a.s.IMEStatus = shadowime.Status(); a.invalidate() })
 	mygo.App.OnWindowAllClosed(func() {})
 	mygo.App.OnActivate(func(bool) { a.show() })
 	mygo.App.OnSecondInstance(func([]string, string) { a.show() })
-	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { a.quitting = true; a.stop(); a.releaseTarget(); a.closeLocal() })
+	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) {
+		a.quitting = true
+		a.stop()
+		a.releaseTarget()
+		a.closeLocal()
+		if a.candidates != nil {
+			a.candidates.Close()
+		}
+	})
 	mygo.App.OnWillQuit(func(*mygo.QuitEvent) { mygo.GlobalShortcut.UnregisterAll() })
 	if err := mygo.GlobalShortcut.Register(state.Shortcut, a.capture); err != nil {
 		a.s.Failure = copy.WriteShortcutError
 	}
 	a.installTray()
 	a.initLocal()
+	a.initInputMethod()
 	if a.s.Provider == state.ProviderChatGPT {
 		a.initAccount()
 	}
@@ -89,7 +103,7 @@ func (a *app) ready() {
 }
 
 func (a *app) actions() state.Actions {
-	return state.Actions{SignIn: a.signIn, Logout: a.logout, RefreshModels: a.models, Generate: a.generate, Cancel: a.stop,
+	return state.Actions{InstallIME: a.installInputMethod, ToggleCandidates: a.toggleCandidates, OpenInputSettings: func() { a.closePanel(); a.s.InputPage = true; a.s.Settings = false; a.show() }, SignIn: a.signIn, Logout: a.logout, RefreshModels: a.models, Generate: a.generate, Cancel: a.stop,
 		Import: a.importText, Copy: a.copyResult, Paste: a.pasteResult, Hide: a.hide, Changed: a.changed, Preferences: a.savePreferences,
 		RequestAccess:   requestAccess,
 		ProviderChanged: a.providerChanged, DownloadLocal: func() { a.startLocal(true, true) }, EnableLocal: func() { a.startLocal(false, true) }, DisableLocal: func() { a.startLocal(false, false) }, CancelLocal: func() { a.startLocal(false, false) },
@@ -135,7 +149,12 @@ func (a *app) releaseTarget() {
 	}
 	a.s.HasTarget = false
 }
-func (a *app) changed() { a.s.InvalidateResult() }
+func (a *app) changed() {
+	a.s.InvalidateResult()
+	if a.candidates != nil {
+		a.candidates.Revoke()
+	}
+}
 
 func (a *app) stop() {
 	a.job++
@@ -341,9 +360,10 @@ func failureKey(err error) copy.Key {
 }
 
 type preferences struct {
-	Provider string
-	Locale   copy.Locale
-	Model    string
+	AICandidates bool
+	Provider     string
+	Locale       copy.Locale
+	Model        string
 }
 
 func (a *app) loadPreferences() {
@@ -360,6 +380,7 @@ func (a *app) loadPreferences() {
 		a.s.Failure = copy.WriteStoreError
 		return
 	}
+	a.s.AICandidates = p.AICandidates
 	a.s.Locale, a.s.Model = p.Locale, p.Model
 	a.s.Provider = p.Provider
 	if a.s.Provider == "" {
@@ -367,7 +388,7 @@ func (a *app) loadPreferences() {
 	} // Preserve the previous preview's account workflow.
 }
 func (a *app) savePreferences() {
-	b, err := json.Marshal(preferences{Provider: a.s.Provider, Locale: a.s.Locale, Model: a.s.Model})
+	b, err := json.Marshal(preferences{AICandidates: a.s.AICandidates, Provider: a.s.Provider, Locale: a.s.Locale, Model: a.s.Model})
 	if err == nil {
 		err = os.MkdirAll(a.directory, 0700)
 	}

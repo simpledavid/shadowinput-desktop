@@ -13,6 +13,9 @@
 #include <errno.h>
 #include <unistd.h>
 
+#ifdef SHADOWINPUT_IME
+#import "../shadowinput/candidate_macos.h"
+#endif
 static NSString *hostBuildIdentity;
 
 @class ArionInputController;
@@ -35,6 +38,9 @@ static NSString *hostBuildIdentity;
 @property(strong) ArionCandidatePanel *candidateWindow;
 @property(strong) ArionLanguagePanel *languageWindow;
 @property BOOL keyboardReady;
+#ifdef SHADOWINPUT_IME
+@property(strong) ShadowCandidate *ai;
+#endif
 @property(copy) NSString *dictationKey;
 - (NSDictionary *)activationMessage;
 - (void)apply:(NSDictionary *)message;
@@ -340,6 +346,19 @@ static NSString *voiceInputTitle(NSString *dictationKey) {
         };
     }
     if (!self.languageWindow) self.languageWindow = [ArionLanguagePanel new];
+#ifdef SHADOWINPUT_IME
+    if (!self.ai) {
+        self.ai = [ShadowCandidate new];
+        __weak ArionInputController *weakSelf = self;
+        self.ai.ready = ^{ [weakSelf showAI]; };
+        self.ai.panel.selected = ^(NSUInteger index, NSUInteger row, NSUInteger revision) {
+            (void)index; (void)row;
+            ArionInputController *owner=weakSelf;
+            if ([ArionBridge shared].active == owner && owner.ai.text && shadowAIEnabled() && revision == owner.ai.revision)
+                [owner.typing commitAI:owner.ai.text revision:revision];
+        };
+    }
+#endif
     self.dictationKey = applyKeyboardSettings(self.typing, self.candidateWindow);
     self.languageWindow.appearance = self.candidateWindow.appearance;
     self.keyboardReady = [self.typing activate:sender error:nil];
@@ -394,6 +413,10 @@ static NSString *voiceInputTitle(NSString *dictationKey) {
         NSBeep();
         return YES;
     }
+#ifdef SHADOWINPUT_IME
+    if (event.keyCode == 48 && !(event.modifierFlags & (NSEventModifierFlagCommand|NSEventModifierFlagControl|NSEventModifierFlagOption|NSEventModifierFlagShift)) && self.ai.text && shadowAIEnabled() &&
+        [self.typing commitAI:self.ai.text revision:self.ai.revision]) return YES;
+#endif
     return [self.typing handleEvent:event];
 }
 
@@ -422,7 +445,21 @@ static NSString *voiceInputTitle(NSString *dictationKey) {
     NSDictionary *ack = [self.composition apply:message];
     if (ack) [[ArionBridge shared] send:ack];
 }
+#ifdef SHADOWINPUT_IME
+- (void)showAI {
+    if ([ArionBridge shared].active != self || !self.typing.composing || self.typing.revision != self.ai.revision || !self.ai.text.length) { [self.ai clear]; return; }
+    NSRect caret=NSZeroRect;
+    [self.client attributesForCharacterIndex:0 lineHeightRectangle:&caret];
+    if (NSIsEmptyRect(caret)) { [self.ai.panel hide]; return; }
+    // A separate row leaves ordinary candidate indices and Space unchanged.
+    caret.origin.y -= 48;
+    [self.ai.panel showCandidates:@[[@"AI · Tab  " stringByAppendingString:self.ai.text]] highlighted:0 lastPage:YES revision:self.ai.revision caretRect:caret];
+}
+#endif
 - (void)refreshCandidates {
+#ifdef SHADOWINPUT_IME
+    [self.ai update:self.typing.aiSource revision:self.typing.revision];
+#endif
     [self.languageWindow hide];
     ArionKeyboardSnapshot *snapshot = self.typing.snapshot;
     if (!self.typing.composing || snapshot.candidates.count == 0) {
@@ -453,8 +490,10 @@ static NSString *voiceInputTitle(NSString *dictationKey) {
         action:@selector(dictate:) keyEquivalent:@""];
     voice.target = self;
     voice.enabled = bridge.fd >= 0 && bridge.active == self;
+#ifndef SHADOWINPUT_IME
     [menu addItem:voice];
     [menu addItem:NSMenuItem.separatorItem];
+#endif
     NSString *key = (!self.keyboardReady || !self.typing.available) ? @"KeyboardUnavailable" :
         (self.typing.ascii ? @"KeyboardSwitchChinese" : @"KeyboardSwitchEnglish");
     NSMenuItem *item = [self menuItem:key action:@selector(toggleLanguage:)];

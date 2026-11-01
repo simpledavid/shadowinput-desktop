@@ -10,7 +10,8 @@ import { verifiedCorrectionIdentity } from './lib/keyboard-correction-patch.mjs'
 import { verifyWindowsPEDependencies } from './lib/windows-pe.mjs';
 import { verifyWindowsKeyboardRuntime } from './lib/windows-keyboard.mjs';
 
-if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Windows keyboard runtime requires native Windows x64.');
+const cross = process.platform === 'darwin' && process.env.SHADOWINPUT_CROSS_WINDOWS === '1';
+if (!cross && (process.platform !== 'win32' || process.arch !== 'x64')) throw new Error('Windows keyboard runtime requires native Windows x64.');
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifestPath = path.join(root, 'scripts/keyboard-runtime.json');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -42,7 +43,7 @@ function source(spec, directory, members = []) {
   }
   return target;
 }
-const flags = ['-G', 'Ninja', '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
+const flags = [...(cross ? ['-DCMAKE_SYSTEM_NAME=Windows', '-DCMAKE_SYSTEM_PROCESSOR=AMD64'] : []), '-G', 'Ninja', '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
   `-DCMAKE_CXX_COMPILER=${compiler}`, `-DCMAKE_C_COMPILER=${process.env.CC ?? 'gcc'}`,
   `-DCMAKE_INSTALL_PREFIX=${sdk}`, '-DCMAKE_INSTALL_LIBDIR=lib', '-DBUILD_SHARED_LIBS=OFF',
   // Apply static dependency resolution to the whole DLL link. A leading
@@ -154,10 +155,10 @@ try {
   rmSync(path.join(path.dirname(deployer), 'librime.dll'), { force: true });
   verifyWindowsPEDependencies([library, deployer]);
   const systemRoot = process.env.SystemRoot;
-  if (!systemRoot) throw new Error('Windows schema deployment requires SystemRoot');
-  const isolatedEnv = { SystemRoot: systemRoot, WINDIR: systemRoot, PATH: path.join(systemRoot, 'System32'), TEMP: process.env.TEMP, TMP: process.env.TMP };
+  if (!systemRoot && !cross) throw new Error('Windows schema deployment requires SystemRoot');
+  const isolatedEnv = { SystemRoot: systemRoot, WINDIR: systemRoot, PATH: path.join(systemRoot ?? '', 'System32'), TEMP: process.env.TEMP, TMP: process.env.TMP };
   stageKeyboardData({ manifest, manifestPath, profile: path.join(root, 'apps/desktop/ime/shared/keyboard-data'), staging, work,
-    deploy: args => run(deployer, args, { env: isolatedEnv, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 8 * 1024 * 1024, timeout: 120000 }),
+    deploy: args => run(cross ? process.env.SHADOWINPUT_DATA_DEPLOYER : deployer, args, { env: cross ? {...process.env,DYLD_LIBRARY_PATH:path.join(root,'apps/desktop/resources/darwin/keyboard/lib')} : isolatedEnv, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 8 * 1024 * 1024, timeout: 120000 }),
   });
   copy(path.join(boost, 'LICENSE_1_0.txt'), path.join(staging, 'licenses/boost-LICENSE'));
   copy(path.join(rime, 'include/COPYING.darts-clone'), path.join(staging, 'licenses/darts-clone-COPYING'));

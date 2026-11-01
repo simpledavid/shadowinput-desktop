@@ -2,6 +2,8 @@
 
 面向 **macOS 和 Windows** 的键盘优先 AI 写作工具，使用 Go + MyGo，基于 [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion) 开发。
 
+**实验性系统输入法：**本分支新增原生拼音和可主动开启的独立 AI 候选行。macOS 在用户报告允许后仍未完成系统启用；Windows TSF 仅完成交叉编译。详见[操作方式、构建前提和验收限制](docs/project/shadowinput-ime.md)。下方现有 preview.5 安装包不包含这版输入法。
+
 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
 - 本地 Qwen3.5-2B Q4_K_M：首次主动下载约 1.28 GB 模型，之后可离线启动，无需登录或 API Key。

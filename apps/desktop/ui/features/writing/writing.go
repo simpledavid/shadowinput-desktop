@@ -52,6 +52,13 @@ func Editor(c *ui.Context, s *state.State, a state.Actions) {
 			styleSettings(c, s, a, t, m)
 			return
 		}
+		if !s.Compact && s.InputPage {
+			inputSettings(c, s, a, t, m)
+			return
+		}
+		if !s.Compact {
+			kit.Button(c.Key("input-settings"), t, kit.Ghost, m.Text(copy.ShadowInputSettings), true).OnClick(a.OpenInputSettings)
+		}
 		provider(c, s, a, t, m)
 		ui.Scroll(c.Key("writing-scroll")).Grow(1).MinHeight(0).Children(func() {
 			ui.Column(c).Gap(12).Children(func() {

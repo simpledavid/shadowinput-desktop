@@ -126,6 +126,29 @@ bool verifiedKeyPolicy(NSDictionary *attributes) {
 }
 
 NSData *keychainKey(bool mayCreate) {
+#ifdef SHADOWINPUT_IME
+    // Unsigned preview uses a separate login-keychain item. The upstream
+    // provisioned Data Protection identity and existing vaults are untouched.
+    NSMutableDictionary *q=[@{(__bridge id)kSecClass:(__bridge id)kSecClassGenericPassword,
+      (__bridge id)kSecAttrService:@"org.shadowinput.keyboard.preview.learning",
+      (__bridge id)kSecAttrAccount:@"aes256-gcm-v1", (__bridge id)kSecUseDataProtectionKeychain:@NO,
+      (__bridge id)kSecReturnData:@YES} mutableCopy];
+    CFTypeRef value=nullptr;
+    OSStatus found=SecItemCopyMatching((__bridge CFDictionaryRef)q,&value);
+    if (found==errSecSuccess) {
+        id key=CFBridgingRelease(value);
+        if ([key isKindOfClass:NSData.class] && [key length]==32) return key;
+        fail(1); return nil;
+    }
+    if (found!=errSecItemNotFound || !mayCreate) { fail(14); return nil; }
+    NSMutableData *key=[NSMutableData dataWithLength:32];
+    if (SecRandomCopyBytes(kSecRandomDefault,32,key.mutableBytes)!=errSecSuccess) { fail(1); return nil; }
+    [q removeObjectForKey:(__bridge id)kSecReturnData]; q[(__bridge id)kSecValueData]=key;
+    OSStatus added=SecItemAdd((__bridge CFDictionaryRef)q,nullptr);
+    if (added==errSecDuplicateItem) return keychainKey(false);
+    if (added!=errSecSuccess) { fail(14); return nil; }
+    return key;
+#else
     NSDictionary *legacyQuery = @{(__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrService: @"si.astrafoundry.arion.keyboard.learning",
         (__bridge id)kSecAttrAccount: @"aes256-gcm-v1", (__bridge id)kSecUseDataProtectionKeychain: @NO,
@@ -178,6 +201,7 @@ NSData *keychainKey(bool mayCreate) {
     }
     // Re-read the OS-kept item, including its policy, before accepting the key.
     return keychainKey(false);
+#endif
 }
 } // namespace
 

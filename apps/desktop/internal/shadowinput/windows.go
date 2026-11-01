@@ -7,6 +7,9 @@ import (
 )
 
 func (a *app) invalidate() {
+	if a.candidates != nil {
+		_ = a.candidates.SetEnabled(a.s.AICandidates && a.s.CanGenerate())
+	}
 	if a.win != nil {
 		a.win.Invalidate()
 	}
@@ -21,7 +24,13 @@ func (a *app) closePanel() {
 		panel.Close()
 	}
 }
-func (a *app) openEditor() { a.closePanel(); a.s.Compact = false; a.s.Settings = false; a.show() }
+func (a *app) openEditor() {
+	a.s.InputPage = false
+	a.closePanel()
+	a.s.Compact = false
+	a.s.Settings = false
+	a.show()
+}
 func (a *app) openStyles() {
 	if a.s.Busy {
 		return
@@ -42,6 +51,7 @@ func (a *app) openStyles() {
 func (a *app) showPanel() {
 	a.closePanel()
 	a.win.Hide()
+	a.s.InputPage = false
 	a.s.Compact = true
 	a.s.Settings = false
 	point := mygo.Screen.CursorScreenPoint()

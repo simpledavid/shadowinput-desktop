@@ -116,6 +116,9 @@ class Service final : public ITfTextInputProcessorEx, public ITfThreadMgrEventSi
     ITfKeystrokeMgr *keys=nullptr;
     KeyboardClient keyboard;
     CandidateWindow candidates{module};
+#ifdef SHADOWINPUT_IME
+    CandidateWindow aiCandidates{module};
+#endif
     ModeBadge badge{module};
     LanguageBar *languageBar=nullptr;
     std::unique_ptr<Typing> typing;
@@ -139,6 +142,9 @@ class Service final : public ITfTextInputProcessorEx, public ITfThreadMgrEventSi
             return 0;
         }
         if (message == Learn) { std::unique_ptr<LearnCommit> value(reinterpret_cast<LearnCommit*>(lp)); if (value->generation==self->keyboard.generation()) self->keyboard.learn(value->commit,value->previous,self->typing->rankingFailure); return 0; }
+#ifdef SHADOWINPUT_IME
+        if(message==WM_TIMER && wp==3){if(self->focused && self->typing->composing()){TypingCommand check;check.kind=TypingCommand::Inspect;self->keyRequest(check);}return 0;}
+#endif
         if (message == WM_TIMER && wp==2) { self->badge.hide(); KillTimer(window,2); return 0; }
         if (message == WM_TIMER) { self->refreshSettings(); self->connect(); if (!self->session.empty()) { WireMessage check; check.op=L"inspect"; check.activation=self->activation; check.session=self->session; self->request(check); } if (self->typing->composing()) { TypingCommand check; check.kind=TypingCommand::Inspect; self->keyRequest(check); } if (self->languageBar) self->languageBar->changed(); return 0; }
         return DefWindowProcW(window, message, wp, lp);
@@ -388,6 +394,10 @@ public:
             if (!snapshot.empty()) text+=",\"rankRequest\":{\"session_id\":"+::quoted(activation)+",\"generation\":1,\"revision\":"+std::to_string(revision)+","+snapshot+"}";
             transport.send(text+"}\n");
         };
+#ifdef SHADOWINPUT_IME
+        typing->setAIPanel(&aiCandidates);
+        aiCandidates.onAction([this](const CandidateAction &action){TypingCommand command;command.kind=TypingCommand::Choose;command.engineIndex=SIZE_MAX;command.revision=action.revision;keyRequest(command);});
+#endif
         candidates.onAction([this](const CandidateAction &action) {
             TypingCommand command; command.revision=action.revision; command.engineIndex=action.index;
             command.kind=action.kind==CandidateAction::Select?TypingCommand::Choose:action.kind==CandidateAction::Previous?TypingCommand::Previous:TypingCommand::Next;
@@ -406,7 +416,8 @@ public:
         if (message.op==L"keyboard_ranked") {
             if (target!=context || !focused || message.activation!=activation || !session.empty()) return S_FALSE;
             mutating=true; HRESULT result=typing->applyRanking(cookie,message); mutating=false;
-            if (result==S_OK) queueLayout(); return result;
+            if (result==S_OK) queueLayout();
+            return result;
         }
         if (target != context || !focused || message.activation != activation || session.empty() || message.session != session) return S_FALSE;
         if (message.op == L"mark" && message.revision != revision) return S_FALSE;
@@ -537,6 +548,9 @@ public:
 #endif
             refreshSettings(true);
         }
+#ifdef SHADOWINPUT_IME
+        SetTimer(window,3,150,nullptr);
+#endif
         languageBar=new LanguageBar([this] { return menuState(); },[this](KeyboardMenuAction action) { menuCommand(action); });
         hr=languageBar->attach(manager);
 #ifdef ARION_TSF_TESTING

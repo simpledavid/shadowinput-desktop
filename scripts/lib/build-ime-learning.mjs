@@ -11,6 +11,7 @@ export function buildIMELearning({
   arch,
   minimumSystemVersion = '14.0',
   testing = false,
+  defines = [],
   sdkInclude = path.join(root, '.workspace/keyboard-runtime/sdk/include'),
 }) {
   if (!outputDir || !['arm64', 'x86_64'].includes(arch)) {
@@ -32,7 +33,7 @@ export function buildIMELearning({
   run(['clang', '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-target', target,
     '-I', sdkInclude, '-c', path.join(source, '../shared/menu.c'), '-o', menu]);
   run(['clang++', '-std=c++17', '-fobjc-arc', '-O2', '-target', target,
-    '-DGLOG_USE_GLOG_EXPORT', ...(testing ? ['-DARION_LEARNING_TESTING'] : []),
+    '-DGLOG_USE_GLOG_EXPORT', ...defines, ...(testing ? ['-DARION_LEARNING_TESTING'] : []),
     '-I', sdkInclude,
     '-c', path.join(source, 'learning.mm'), '-o', adapter]);
   const shared = ['learning', 'learning_rime', 'ranking', 'ranking_unicode', 'emoji', 'spelling', 'personal_vocabulary', 'personal_vocabulary_store', 'english','english_lexicon'].map(name => {

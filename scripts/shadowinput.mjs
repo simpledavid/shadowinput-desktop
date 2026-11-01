@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verifyWindowsPEDependencies } from './lib/windows-pe.mjs';
 import { stageGoModuleNotices } from './lib/go-module-notices.mjs';
+import { desktopFonts } from './lib/desktop-fonts.mjs';
 import { createInstaller } from './lib/shadowinput-installers.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -22,7 +23,7 @@ function run(command, args, env = process.env, cwd = root) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 if (mode === 'check') {
-  run('go', ['test', '-race', './packages/core/...', './apps/desktop/infrastructure/chatgptplan', './apps/desktop/infrastructure/localwriting', './apps/desktop/infrastructure/llm/...', './apps/desktop/infrastructure/rewriting', './apps/desktop/infrastructure/provision', './apps/desktop/cmd/arion-llm', './apps/desktop/infrastructure/writingprefs', './apps/desktop/ui/shared/writing', './apps/desktop/internal/oauthloopback', './apps/desktop/internal/shadowinput', './apps/desktop/ui/features/writing', './apps/desktop/ui/shared/copy']);
+  run('go', ['test', '-race', './packages/core/...', './apps/desktop/infrastructure/chatgptplan', './apps/desktop/infrastructure/localwriting', './apps/desktop/infrastructure/llm/...', './apps/desktop/infrastructure/rewriting', './apps/desktop/infrastructure/provision', './apps/desktop/cmd/arion-llm', './apps/desktop/infrastructure/writingprefs', './apps/desktop/infrastructure/inputcandidate', './apps/desktop/infrastructure/shadowime', './apps/desktop/ui/shared/writing', './apps/desktop/internal/oauthloopback', './apps/desktop/internal/shadowinput', './apps/desktop/ui/features/writing', './apps/desktop/ui/shared/copy']);
   run('go', ['vet', source, './apps/desktop/infrastructure/chatgptplan', './apps/desktop/internal/shadowinput']);
   run(process.execPath, ['scripts/check-repository.mjs']);
 } else if (mode === 'dev') {
@@ -56,6 +57,12 @@ if (mode === 'check') {
   const platform = `${env.GOOS}-${env.GOARCH}`;
   run(process.execPath, ['scripts/stage-llm-runtime.mjs', platform]);
   cpSync(path.join(root, 'apps/desktop/resources', platform, 'llm'), path.join(resources, 'llm'), {recursive: true});
+  run(process.execPath, ['scripts/build-shadowinput-ime.mjs', target]);
+  if (target === 'macos') cpSync(path.join(root,'apps/desktop/resources/shadowinput/ShadowInput.app'), path.join(resources,'ShadowInput.app'), {recursive:true});
+  else {
+    cpSync(path.join(root,'apps/desktop/resources/shadowinput/windows/ime'),path.join(resources,'ime'),{recursive:true});
+    cpSync(path.join(root,'apps/desktop/resources/windows-amd64/keyboard'),path.join(resources,'keyboard'),{recursive:true});
+  }
   run('go', ['build', '-trimpath', ...(target === 'windows' ? ['-ldflags=-H=windowsgui'] : []), '-o', executable, source], env);
   copyFileSync(path.join(root, 'LICENSE'), path.join(resources, 'LICENSE.txt'));
   copyFileSync(path.join(root, 'docs/project/shadowinput.md'), path.join(resources, 'SOURCE-AND-NOTICES.md'));
@@ -70,14 +77,24 @@ if (mode === 'check') {
     copyFileSync(path.join(icons, file), path.join(licenses, `icons-${file}`));
   }
   if (target === 'windows') copyFileSync(path.join(root, 'scripts/installers/NSIS-COPYING.txt'), path.join(licenses, 'NSIS-COPYING.txt'));
+  const fonts=desktopFonts(root);
+  copyFileSync(path.join(fonts.directory,fonts.manifest.license),path.join(licenses,'SourceHanSans-OFL.txt'));
+  copyFileSync(path.join(fonts.directory,'manifest.json'),path.join(licenses,'source-han-sans.json'));
   const buildInfo = { product: 'shadowinput', version, revision, dirty, target, arch: env.GOARCH, go: output('go', ['env', 'GOVERSION'], env), source: `${repository}/tree/${revision}`, license: 'AGPL-3.0', localRuntime: JSON.parse(readFileSync(path.join(root, 'scripts/llm-runtime.json'), 'utf8')).platforms[platform], localModel: 'qwen3.5-2b-q4-k-m-metal', weightsBundled: false };
   writeFileSync(path.join(resources, 'BUILD-INFO.json'), `${JSON.stringify(buildInfo, null, 2)}\n`);
   writeFileSync(path.join(out, 'README.txt'), `shadowinput ${version} — development preview / 开发预览版
 
 ${target === 'macos' ? 'macOS 14+ / Apple silicon (arm64). Move shadowinput.app to Applications.\n仅支持 Apple 芯片。打开 DMG（或解压 ZIP），将 shadowinput.app 移到 Applications。\nAd hoc signed; no Developer ID signing or Apple notarization.\n本包尚无 Developer ID 签名或公证，系统可能阻止打开。\nSee https://support.apple.com/102445 for Apple\'s app-opening guidance.' : 'Windows x64. Run the setup EXE; open shadowinput from the Start menu. For the portable ZIP, extract the entire folder and launch shadowinput.exe.\n运行 setup.exe 安装后，从开始菜单打开 shadowinput。便携 ZIP 请完整解压后运行 shadowinput.exe。\nNo publisher signature. Native Windows behavior is not yet verified.\n本包尚无发布者签名，Windows 原生运行仍待验收。'}
 
-Select text in a supported editor, press Cmd/Ctrl+Shift+J, generate, review, then apply.
-在支持的编辑器中选中文字 → Cmd/Ctrl+Shift+J → 生成 → 审阅 → 应用修改。
+Install the system input method from Input method settings, then switch to shadowinput in the OS input menu.
+Experimental IME: installed macOS selection/typing and Windows native behavior have not passed acceptance. API registration success is not proof of enablement.
+实验性输入法：macOS 的系统切换、实际打字以及 Windows 原生使用尚未通过验收；注册接口成功不等于系统已启用。
+Type Pinyin directly in your editor. Space/numbers select ordinary candidates; Tab accepts the separate AI candidate.
+Automatic AI candidates require explicit enablement and the desktop app running with a ready model.
+在“输入法设置”安装 / 启用后，从系统输入菜单切换到 shadowinput。
+直接输入拼音：空格 / 数字选普通候选；Tab 采纳 AI 候选；Esc 取消。
+AI 候选默认关闭；开启后保持主程序和模型可用。ChatGPT 会接收当前组合短句及风格、词表，并消耗套餐用量。
+长文工具仍支持：选中文字 → Cmd/Ctrl+Shift+J → 生成 → 审阅 → 应用修改。
 If selection is unavailable, use Paste original or type a draft; copy the result manually.
 无法读取选区时，请用“粘贴原文”或手动输入，完成后复制结果。
 Flagged changes require review. Styles, terms and task defaults stay on this device.
@@ -88,8 +105,8 @@ Local model: choose Local model, then Download & start (1.28 GB). Subsequent Sta
 本地模型：选择“本地模型”后“下载并启动”（1.28 GB）；此后可离线启动。
 Qwen3.5-2B Q4_K_M runs on this computer; no ChatGPT account or API key is needed.
 本机运行 Qwen3.5-2B Q4_K_M，无需 ChatGPT 账号或 API Key。
-Real ChatGPT login, account eligibility and inference still need acceptance testing.
-真实 ChatGPT 登录、账号资格与推理仍待验收。
+One real ChatGPT account and candidate request were verified on macOS. Other accounts and installed Windows TSF behavior remain unverified.
+macOS 已验证一个 ChatGPT 账号和候选请求；其他账号及 Windows 已安装输入法行为仍待验收。
 
 Exact source / 对应源码: ${repository}/tree/${revision}
 Release / 发布说明: ${repository}/releases/tag/${version}

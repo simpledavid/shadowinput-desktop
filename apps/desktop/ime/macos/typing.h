@@ -35,6 +35,9 @@ typedef NS_ENUM(NSInteger, ArionTypingSwitch) {
 // Nil snapshot freezes inference; callbacks run on the native owner thread.
 @property(copy) void (^rankingChanged)(NSDictionary *snapshot, NSUInteger revision);
 - (void)freezeRanking;
+// Full-span composition only; AI never reads surrounding editor text.
+- (NSString *)aiSource;
+- (BOOL)commitAI:(NSString *)text revision:(NSUInteger)revision;
 - (void)applyRankingMessage:(NSDictionary *)message activation:(NSString *)activation;
 @property BOOL emojiSuggestions;
 @property(nonatomic) BOOL typoCorrection;

@@ -812,5 +812,15 @@
   "WriteLocalInputBudget": "内容超出本地模型的上下文容量。请缩短原文、附加要求或分段处理。",
   "WriteLocalOutputBudget": "本地模型未完整生成结果。请缩短原文或要求更简短的结果后重试。",
   "WriteLocalControlInput": "文本含模型控制标记或无效字符，请移除后重试。",
-  "WriteTimeoutError": "生成超时，原文已保留。请缩短内容后重试。"
+  "WriteTimeoutError": "生成超时，原文已保留。请缩短内容后重试。",
+  "ShadowInputSettings": "输入法设置",
+  "ShadowInputSteps": "1. 安装输入法　2. 在系统输入菜单切换到 shadowinput　3. 在微信、文档等输入框直接打字。",
+  "ShadowInstallIME": "安装 / 启用输入法",
+  "ShadowCandidateKeys": "空格 / 数字：普通候选　Tab：采纳 AI 候选　Esc：取消组合",
+  "ShadowAICloud": "开启后，输入停顿时会将当前尚未上屏的短句及你的风格、词表发给所选 ChatGPT 模型，消耗套餐用量。不读取周围文档，不保存输入记录。",
+  "ShadowAILocal": "开启后，输入停顿时由本机模型生成候选；需要先下载并启动模型。普通拼音输入不需要模型。",
+  "ShadowAIEnable": "开启自动 AI 候选",
+  "ShadowAIDisable": "关闭自动 AI 候选",
+  "ShadowAINote": "AI 候选仅针对当前完整短句，至少 4 个字；生成期间可以继续输入。超时、风险变化或无合适结果时，只保留普通候选。",
+  "ShadowWritingTool": "打开长文写作工具"
 }

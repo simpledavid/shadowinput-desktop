@@ -66,7 +66,9 @@ class LanguageBar final : public ITfLangBarItemButton,public ITfSource {
             items.push_back({static_cast<UINT>(action),enabled?0u:TF_LBMENUF_GRAYED,std::move(text)});
         };
         auto separator=[&]() { items.push_back({0,TF_LBMENUF_SEPARATOR,{}}); };
+#ifndef SHADOWINPUT_IME
         item(KeyboardMenuAction::Voice,nativeVoiceTitle(current.dictationKey),current.voice);
+#endif
         separator();
         if (!current.failure.empty()) { items.push_back({0,TF_LBMENUF_GRAYED,current.failure}); separator(); }
         item(KeyboardMenuAction::Language,nativeCopy(current.available?(current.ascii?NativeCopy::SwitchChinese:NativeCopy::SwitchEnglish):NativeCopy::Unavailable),current.available);

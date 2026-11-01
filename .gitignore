@@ -62,6 +62,7 @@ __pycache__/
 
 # Generated Windows TSF service and payload manifest.
 /apps/desktop/resources/windows-amd64/ime/
+/apps/desktop/resources/shadowinput/
 
 # Regenerated aggregate reports exceed GitHub blob limits; sources remain archived.
 /benchmarks/results/rewrite-release/data.json

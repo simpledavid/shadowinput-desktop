@@ -341,6 +341,27 @@ static const char *vocabularyString(id value, NSUInteger maximum) {
     }
     return -1;
 }
+- (NSString *)aiSource {
+    if (!self.live || !self.composing || self.ascii || _menu.page || _menu.expanded || !_menu.count) return nil;
+    const char *input = self.engine.api->get_input(self.session);
+    if (!input || self.engine.api->get_caret_pos(self.session) != strlen(input) ||
+        _menu.metadata[0].emoji || _menu.metadata[0].start != 0 || _menu.metadata[0].end != strlen(input)) return nil;
+    NSString *text = @(_menu.texts[0]);
+    return containsHan(text) ? text : nil;
+}
+- (BOOL)commitAI:(NSString *)text revision:(NSUInteger)revision {
+    if (!self.live || !self.composing || self.revision != revision || !text.length || text.length > 256 || ![self verify]) return NO;
+    if ([self.client respondsToSelector:@selector(markedRange)] && [self.client markedRange].location == NSNotFound) return NO;
+    [self freezeRanking];
+    [self.engine clear:self.session];
+    self.composing = NO;
+    self.snapshot = nil; self.engineSnapshot = nil;
+    self.previousCommit = nil; self.emojiInComposition = NO;
+    arion_menu_dispose(&_menu); self.revision++;
+    [self.client insertText:text replacementRange:NSMakeRange(NSNotFound, NSNotFound)];
+    if (self.changed) self.changed();
+    return YES;
+}
 - (BOOL)choose:(NSUInteger)index {
     if (index >= _menu.count) return NO;
     BOOL emoji = _menu.metadata[index].emoji != 0;

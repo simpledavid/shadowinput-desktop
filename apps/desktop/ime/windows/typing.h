@@ -9,6 +9,9 @@
 #include "native_copy.h"
 #include <climits>
 #include <cctype>
+#ifdef SHADOWINPUT_IME
+#include "../shadowinput/candidate_windows.h"
+#endif
 
 struct TypingCommand {
     enum Kind { Key,Choose,Previous,Next,Inspect,ToggleASCII,ShiftASCII,TogglePunctuation,ToggleWidth } kind=Key;
@@ -32,6 +35,36 @@ class Typing {
     size_t caret=0;
     ArionPinyinMenu menu{};
     CandidateWindow &panel;
+#ifdef SHADOWINPUT_IME
+    ShadowCandidateClient ai;
+    CandidateWindow *aiPanel=nullptr;
+    std::wstring aiText;
+    uint64_t aiRevision=0;
+    void clearAI() { aiText.clear(); aiRevision=0; ai.update({},revision); if(aiPanel)aiPanel->hide(); }
+    void requestAI() {
+        clearAI();
+        if (!composition || ascii || menu.page || menu.expanded || !menu.count) return;
+        const char *input=runtime.api()->get_input(session);
+        if(!input || runtime.api()->get_caret_pos(session)!=strlen(input) || menu.metadata[0].emoji || menu.metadata[0].start!=0 || menu.metadata[0].end!=strlen(input))return;
+        ai.update(menu.texts[0],revision);
+    }
+    HRESULT commitAI(TfEditCookie cookie,bool &handled) {
+        if(!shadowAIEnabled() || aiText.empty() || aiRevision!=revision || !same(cookie)) return S_FALSE;
+        std::wstring text=aiText;ITfRange *range=nullptr;
+        HRESULT hr=composition->GetRange(&range);
+        if(SUCCEEDED(hr))hr=range->SetText(cookie,0,text.data(),static_cast<LONG>(text.size()));
+        if(SUCCEEDED(hr)){handled=true;lastText=text;hr=selection(cookie,range,text.size());}
+        if(SUCCEEDED(hr))hr=composition->EndComposition(cookie);
+        if(range)range->Release();
+        clearAI();
+        if(SUCCEEDED(hr)){
+            composition->Release();composition=nullptr;
+            arion_pinyin_clear(runtime.api(),session);arion_menu_dispose(&menu);
+            panel.hide();accessible->hide();clearAnchor();original.clear();lastText.clear();previousCommit.clear();++revision;
+        }
+        return hr;
+    }
+#endif
     CandidateUI *accessible=new CandidateUI;
     bool ascii=false,fullWidth=false,englishPunctuation=false;
     bool healthy=true;
@@ -177,6 +210,9 @@ class Typing {
         // Do not hide the panel by querying layout invalidated by SetText.
     }
 public:
+#ifdef SHADOWINPUT_IME
+    void setAIPanel(CandidateWindow *value){aiPanel=value;}
+#endif
     // Geometry can lag SetText in browser text stores. This path runs under a
     // read lock after layout notification and never calls the engine or writes
     // the document. The current revision must still own its exact text/caret.
@@ -198,10 +234,23 @@ public:
 #ifdef ARION_TSF_TESTING
         std::fprintf(stderr,"TSF candidate extent revision=%llu hr=%08lx clipped=%d rect=%ld,%ld,%ld,%ld\n",static_cast<unsigned long long>(revision),static_cast<unsigned long>(hr),clipped?1:0,area.left,area.top,area.right,area.bottom);
 #endif
-        if (FAILED(hr) || clipped || area.bottom<=area.top || area.right<area.left) { panel.hide(); accessible->bind(nullptr); return FAILED(hr)?hr:S_FALSE; }
+        if (FAILED(hr) || clipped || area.bottom<=area.top || area.right<area.left) {
+#ifdef SHADOWINPUT_IME
+ if(aiPanel)aiPanel->hide();
+#endif
+ panel.hide(); accessible->bind(nullptr); return FAILED(hr)?hr:S_FALSE; }
         if (area.right==area.left) ++area.right;
-        std::vector<NativeCandidate> candidates;
         bool native=accessible->nativeAllowed();
+#ifdef SHADOWINPUT_IME
+        if(aiPanel) {
+            if(native && !aiText.empty() && aiRevision==revision && !menu.expanded) {
+                int offset=MulDiv(48,owner?GetDpiForWindow(owner):96,96);
+                RECT below=area;below.top+=offset;below.bottom+=offset;
+                aiPanel->show(owner,below,{{L"AI · Tab  "+aiText,L"",SIZE_MAX,false}},0,false,false,revision,palette,1,false,textSize,false);
+            }else aiPanel->hide();
+        }
+#endif
+        std::vector<NativeCandidate> candidates;
         size_t first=(menu.expanded?menu.top_row:menu.page)*menu.page_size;
         size_t count=menu.expanded?std::min(menu.count-first,arion_menu_row_count(&menu)*menu.page_size):arion_menu_visible_count(&menu);
         for (size_t i=0;i<count;++i) candidates.push_back({wide(menu.texts[first+i]),L"",menu.indices[first+i],menu.metadata[first+i].emoji!=0});
@@ -246,7 +295,11 @@ private:
             if (SUCCEEDED(hr)) { lastText=preedit; caret=std::min(nextCaret,preedit.size()); hr=selection(cookie,range,caret); }
             if (range) range->Release();
             if (SUCCEEDED(hr) && !buildMenu()) hr=E_FAIL;
-            if (SUCCEEDED(hr)) show();
+            if (SUCCEEDED(hr)) {show();
+#ifdef SHADOWINPUT_IME
+ requestAI();
+#endif
+}
         } else if (SUCCEEDED(hr)) cancel(cookie);
         if (FAILED(hr)) recoveryText=(delivered?std::wstring{}:committed)+preedit;
         return hr;
@@ -344,6 +397,9 @@ public:
         return valid;
     }
     void cancel(TfEditCookie cookie) {
+#ifdef SHADOWINPUT_IME
+ clearAI();
+#endif
         freezeRanking();
         KeyboardLease lease(runtime);
         if (composition) {
@@ -356,6 +412,9 @@ public:
         emojiInComposition=false;
     }
     void invalidate() {
+#ifdef SHADOWINPUT_IME
+ clearAI();
+#endif
         freezeRanking();
         KeyboardLease lease(runtime);
         if (composition) { revoke(composition,lastText,original); composition->Release(); composition=nullptr; }
@@ -364,6 +423,9 @@ public:
         emojiInComposition=false;
     }
     bool terminated(TfEditCookie cookie,ITfComposition *value) {
+#ifdef SHADOWINPUT_IME
+ clearAI();
+#endif
         if (value!=composition) return false;
         KeyboardLease lease(runtime);
         ITfRange *range=nullptr;
@@ -405,8 +467,22 @@ public:
                 applyCandidatePreferences();
                 if (composition) { ++revision; if (buildMenu()) show(); else { healthy=false; cancel(cookie); return E_FAIL; } }
             }
+#ifdef SHADOWINPUT_IME
+            if(!shadowAIEnabled())clearAI();
+            if(composition && aiText.empty() && same(cookie)) {
+                auto result=ai.poll(revision);
+                if(result!=aiText){aiText=result;aiRevision=revision;++revision;aiRevision=revision;show();}
+            }
+#endif
             settingsChanged=false; return S_OK;
         }
+#ifdef SHADOWINPUT_IME
+        if ((command.kind==TypingCommand::Choose && command.engineIndex==SIZE_MAX && command.revision==revision) ||
+            (command.kind==TypingCommand::Key && command.key.symbol==0xff09 && !command.key.modifiers)) {
+            if(!aiText.empty()) return commitAI(cookie,handled);
+        }
+        clearAI();
+#endif
         freezeRanking();
         if (command.kind!=TypingCommand::Key && command.kind!=TypingCommand::ToggleASCII && command.kind!=TypingCommand::ShiftASCII && command.kind!=TypingCommand::TogglePunctuation && command.kind!=TypingCommand::ToggleWidth && command.revision!=revision) return S_FALSE;
         if (composition && !same(cookie)) { invalidate(); return S_FALSE; }

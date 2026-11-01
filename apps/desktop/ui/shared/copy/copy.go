@@ -5,6 +5,17 @@ package copy
 type Key string
 
 const (
+	ShadowInputSettings Key = "ShadowInputSettings"
+	ShadowInputSteps    Key = "ShadowInputSteps"
+	ShadowInstallIME    Key = "ShadowInstallIME"
+	ShadowCandidateKeys Key = "ShadowCandidateKeys"
+	ShadowAICloud       Key = "ShadowAICloud"
+	ShadowAILocal       Key = "ShadowAILocal"
+	ShadowAIEnable      Key = "ShadowAIEnable"
+	ShadowAIDisable     Key = "ShadowAIDisable"
+	ShadowAINote        Key = "ShadowAINote"
+	ShadowWritingTool   Key = "ShadowWritingTool"
+
 	KbdNeuralRanking            Key = "KbdNeuralRanking"
 	KbdNeuralDetail             Key = "KbdNeuralDetail"
 	KbdNeuralReady              Key = "KbdNeuralReady"

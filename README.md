@@ -2,6 +2,8 @@
 
 Keyboard-first AI writing for **macOS and Windows**, built with Go + MyGo and based on [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion).
 
+**Experimental system input method:** this branch adds native Pinyin with a separate, opt-in AI candidate row. macOS system enablement remains unresolved after reported consent; Windows TSF has only been cross-built. See [workflow, build prerequisites and current acceptance limits](docs/project/shadowinput-ime.md). The existing preview.5 downloads below do not contain this input method.
+
 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
 - Offline Qwen3.5-2B Q4_K_M writing: explicitly download about 1.28 GB once, then start locally without login or an API key.
