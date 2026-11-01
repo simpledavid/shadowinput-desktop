@@ -351,7 +351,7 @@ static NSString *voiceInputTitle(NSString *dictationKey) {
         self.ai = [ShadowCandidate new];
         __weak ArionInputController *weakSelf = self;
         self.ai.ready = ^{ [weakSelf showAI]; };
-        self.ai.valid = ^{ return [ArionBridge shared].active==weakSelf && weakSelf.typing.aiSource.length && weakSelf.typing.revision==weakSelf.ai.revision; };
+        self.ai.valid = ^BOOL(void) { return [ArionBridge shared].active==weakSelf && weakSelf.typing.aiSource.length && weakSelf.typing.revision==weakSelf.ai.revision; };
         self.ai.panel.selected = ^(NSUInteger index, NSUInteger row, NSUInteger revision) {
             (void)index; (void)row;
             ArionInputController *owner=weakSelf;
