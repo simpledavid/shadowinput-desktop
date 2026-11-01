@@ -329,6 +329,8 @@ func failureKey(err error) copy.Key {
 		return copy.WriteTimeoutError
 	case errors.Is(err, chatgptplan.ErrNetwork):
 		return copy.WriteNetworkError
+	case errors.Is(err, chatgptplan.ErrRequest):
+		return copy.WriteRequestError
 	case errors.Is(err, context.Canceled):
 		return copy.WriteCanceled
 	case errors.Is(err, domain.ErrWritingInput):

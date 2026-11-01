@@ -39,6 +39,9 @@ func TestRequestErrorsOfferDistinctRecovery(t *testing.T) {
 		{401, `{}`, ErrAuth}, {403, `{}`, ErrPermission}, {429, `{}`, ErrLimit},
 		{404, `{"error":{"code":"model_not_found"}}`, ErrModel},
 		{400, `{"error":{"code":"model_not_available"}}`, ErrModel},
+		{400, `{"error":{"code":"subscription_sharing_unsupported_capability","param":"input"}}`, ErrRequest},
+		{400, `{"detail":"Input must be a list"}`, ErrRequest},
+		{422, `{"detail":"Invalid input"}`, ErrRequest},
 		{403, `{"error":{"code":"subscription_sharing_usage_limit_exceeded"}}`, ErrLimit},
 		{500, `private server detail`, ErrNetwork},
 	} {

@@ -51,6 +51,8 @@ func (c *Client) request(ctx context.Context, method, path string, body io.Reade
 			return nil, ErrLimit
 		}
 		switch res.StatusCode {
+		case 400, 422:
+			return nil, ErrRequest
 		case 401:
 			return nil, ErrAuth
 		case 403:
@@ -91,7 +93,9 @@ func (c *Client) Generate(ctx context.Context, r domain.WritingRequest, preview 
 	if err := r.Validate(); err != nil {
 		return "", err
 	}
-	body, err := json.Marshal(map[string]any{"model": r.Model, "input": r.Text, "instructions": domain.WritingInstructions(r), "store": false, "stream": true})
+	// The ChatGPT plan route requires a message array, unlike the API-key
+	// route's optional string shorthand. Keep these requirements explicit.
+	body, err := json.Marshal(map[string]any{"model": r.Model, "input": []map[string]string{{"role": "user", "content": r.Text}}, "instructions": domain.WritingInstructions(r), "store": false, "stream": true})
 	if err != nil {
 		return "", err
 	}

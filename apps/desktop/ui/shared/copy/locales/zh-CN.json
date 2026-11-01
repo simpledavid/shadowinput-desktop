@@ -721,6 +721,7 @@
   "WriteAuthError": "登录需要处理，请重新连接 ChatGPT。",
   "WritePermissionError": "请授权使用 ChatGPT 套餐后重新连接。",
   "WriteNetworkError": "连接失败或超时，草稿已保留。请检查网络后重新执行所需操作。",
+  "WriteRequestError": "ChatGPT 不支持当前请求格式，草稿已保留。请更新 shadowinput 或反馈此问题，无需反复登录。",
   "WriteIncompleteError": "生成未完成，预览内容暂不能粘贴。",
   "WriteLimitError": "已达到 ChatGPT 用量限制，请打开“管理用量”。",
   "WriteStoreError": "无法访问本地设置或安全存储。",

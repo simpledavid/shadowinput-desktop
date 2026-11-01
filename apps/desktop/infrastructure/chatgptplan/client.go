@@ -27,6 +27,7 @@ var (
 	ErrAuth       = errors.New("chatgpt authentication failed")
 	ErrPermission = errors.New("chatgpt plan permission required")
 	ErrNetwork    = errors.New("chatgpt request failed")
+	ErrRequest    = errors.New("chatgpt request format unsupported")
 	ErrIncomplete = errors.New("chatgpt response did not complete")
 	ErrLimit      = errors.New("chatgpt usage limit reached")
 	ErrModel      = errors.New("chatgpt model unavailable")

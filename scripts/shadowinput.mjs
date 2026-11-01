@@ -40,10 +40,14 @@ if (mode === 'check') {
     if (dirty) throw new Error('Release packages require a clean source checkout');
     if (output('git', ['rev-parse', `${version}^{commit}`]) !== revision) throw new Error('Release tag must identify HEAD');
   }
-  const out = path.join(root, 'apps/desktop/build/shadowinput', target);
+  // Versioned package payloads do not replace the app a developer is using.
+  const out = path.join(root, 'apps/desktop/build/shadowinput', ...(mode === 'package' ? [version] : []), target);
   const app = path.join(out, 'shadowinput.app');
   const executable = target === 'macos' ? path.join(app, 'Contents/MacOS/shadowinput') : path.join(out, 'shadowinput.exe');
   const resources = target === 'macos' ? path.join(app, 'Contents/Resources') : out;
+  if (target === 'macos' && output('/bin/ps', ['-axo', 'comm=']).split('\n').some(line => line.trim() === executable)) {
+    throw new Error('Quit this shadowinput build before rebuilding it. The running app has not been modified.');
+  }
   rmSync(out, { recursive: true, force: true });
   mkdirSync(path.dirname(executable), { recursive: true });
   mkdirSync(resources, { recursive: true });

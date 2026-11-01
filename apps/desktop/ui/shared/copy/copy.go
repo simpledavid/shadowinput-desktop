@@ -740,6 +740,7 @@ const (
 	WriteAuthError       Key = "WriteAuthError"
 	WritePermissionError Key = "WritePermissionError"
 	WriteNetworkError    Key = "WriteNetworkError"
+	WriteRequestError    Key = "WriteRequestError"
 	WriteIncompleteError Key = "WriteIncompleteError"
 	WriteLimitError      Key = "WriteLimitError"
 	WriteStoreError      Key = "WriteStoreError"
