@@ -19,6 +19,7 @@ func inputSettings(c *ui.Context, s *state.State, a state.Actions, t theme.Token
 			})
 			ui.Text(c, m.Text(copy.ShadowCandidateKeys)).Wrap()
 			provider(c, s, a, t, m)
+			profileFailure(c, s, a, t, m)
 			if s.Failure != "" {
 				recovery(c, s, a, t, m)
 			}

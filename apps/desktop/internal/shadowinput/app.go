@@ -31,6 +31,7 @@ import (
 )
 
 type app struct {
+	dispatch          func(func())
 	candidates        *inputcandidate.Server
 	s                 state.State
 	client            *chatgptplan.Client
@@ -110,7 +111,7 @@ func (a *app) actions() state.Actions {
 		Import: a.importText, Copy: a.copyResult, Paste: a.pasteResult, Hide: a.hide, Changed: a.changed, Preferences: a.savePreferences,
 		RequestAccess:   requestAccess,
 		ProviderChanged: a.providerChanged, DownloadLocal: func() { a.startLocal(true, true) }, EnableLocal: func() { a.startLocal(false, true) }, DisableLocal: func() { a.startLocal(false, false) }, CancelLocal: func() { a.startLocal(false, false) },
-		EditSource: a.editSource, TaskChanged: a.taskChanged, StyleChanged: a.styleChanged, OpenEditor: a.openEditor, OpenStyles: a.openStyles, SaveStyle: a.saveStyle, NewStyle: a.newStyle, DeleteStyle: a.deleteStyle, SaveTerms: a.saveTerms, SetDefault: a.setDefault, RetryProfile: a.loadProfile, SwitchAccount: a.switchAccount,
+		EditSource: a.editSource, TaskChanged: a.taskChanged, StyleChanged: a.styleChanged, OpenEditor: a.openEditor, OpenStyles: a.openStyles, SaveStyle: a.saveStyle, NewStyle: a.newStyle, DeleteStyle: a.deleteStyle, SaveTerms: a.saveTerms, SetDefault: a.setDefault, RetryProfile: func() { a.loadProfile(); a.invalidate() }, SwitchAccount: a.switchAccount,
 		ManageUsage: func() { a.open("https://chatgpt.com/settings/usage") }, Source: func() { a.open("https://github.com/simpledavid/shadowinput-desktop") }}
 }
 
@@ -188,7 +189,7 @@ func (a *app) start(timeout time.Duration) (context.Context, uint64) {
 
 // finish rejects late work from a canceled or replaced operation.
 func (a *app) finish(job uint64, err error, apply func()) {
-	mygo.RunOnMain(func() {
+	a.onMain(func() {
 		if a.quitting || job != a.job {
 			return
 		}
@@ -200,12 +201,7 @@ func (a *app) finish(job uint64, err error, apply func()) {
 		a.s.Notice = ""
 		if err != nil {
 			a.s.InvalidateResult()
-			a.s.Failure = failureKey(err)
-			if errors.Is(err, chatgptplan.ErrAuth) || errors.Is(err, chatgptplan.ErrPermission) {
-				a.s.Connected = false
-				a.s.Models = nil
-				a.s.Model = ""
-			}
+			a.setFailure(err)
 		} else if apply != nil {
 			apply()
 		}
@@ -400,5 +396,24 @@ func (a *app) savePreferences() {
 	}
 	if err != nil {
 		a.s.Failure = copy.WriteStoreError
+	}
+}
+
+// onMain keeps UI dispatch at the composition boundary; tests supply a deterministic loop.
+func (a *app) onMain(fn func()) {
+	if a.dispatch != nil {
+		a.dispatch(fn)
+		return
+	}
+	mygo.RunOnMain(fn)
+}
+
+// setFailure owns the account readiness transition for every inference entry point.
+func (a *app) setFailure(err error) {
+	a.s.Failure = failureKey(err)
+	if errors.Is(err, chatgptplan.ErrAuth) || errors.Is(err, chatgptplan.ErrPermission) {
+		a.s.Connected = false
+		a.s.Models, a.s.ModelNames = nil, nil
+		a.s.Model = ""
 	}
 }

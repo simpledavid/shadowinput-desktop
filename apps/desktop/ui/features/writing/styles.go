@@ -37,14 +37,19 @@ func stylePicker(c *ui.Context, s *state.State, a state.Actions, m copy.Catalog)
 	}
 	return e
 }
-func styleSettings(c *ui.Context, s *state.State, a state.Actions, t theme.Tokens, m copy.Catalog) {
-	ui.Text(c, m.Text(copy.WriteStylePrivacy)).Wrap().FontSize(theme.Caption).TextColor(t.Muted)
+func profileFailure(c *ui.Context, s *state.State, a state.Actions, t theme.Tokens, m copy.Catalog) {
 	if s.ProfileFailure != "" {
 		ui.Text(c, m.Text(s.ProfileFailure)).Wrap().TextColor(t.Danger)
 		if !s.ProfileReady {
 			kit.Button(c.Key("retry-profile"), t, kit.Outline, m.Text(copy.WriteRetryProfile), true).OnClick(a.RetryProfile)
-			return
 		}
+	}
+}
+func styleSettings(c *ui.Context, s *state.State, a state.Actions, t theme.Tokens, m copy.Catalog) {
+	ui.Text(c, m.Text(copy.WriteStylePrivacy)).Wrap().FontSize(theme.Caption).TextColor(t.Muted)
+	profileFailure(c, s, a, t, m)
+	if !s.ProfileReady {
+		return
 	}
 	ui.Scroll(c.Key("settings-scroll")).Grow(1).MinHeight(0).Children(func() {
 		ui.Column(c).Gap(12).Children(func() {

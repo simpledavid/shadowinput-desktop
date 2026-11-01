@@ -111,9 +111,7 @@ func Editor(c *ui.Context, s *state.State, a state.Actions) {
 		if s.Completed && len(s.Review.Issues) > 0 && !s.Reviewed {
 			ui.Text(c, m.Text(copy.WriteRiskPending)).Wrap().FontSize(theme.Caption).TextColor(t.Warning)
 		}
-		if s.ProfileFailure != "" {
-			ui.Text(c, m.Text(s.ProfileFailure)).Wrap().TextColor(t.Danger)
-		}
+		profileFailure(c, s, a, t, m)
 		if s.Failure != "" {
 			recovery(c, s, a, t, m)
 		} else if s.Notice != "" {

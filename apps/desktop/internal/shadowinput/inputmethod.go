@@ -3,6 +3,7 @@ package shadowinput
 import (
 	"arion.local/core/domain"
 	"arion.local/core/domain/ports"
+	"arion.local/desktop/infrastructure/chatgptplan"
 	"arion.local/desktop/infrastructure/inputcandidate"
 	"arion.local/desktop/infrastructure/localwriting"
 	"arion.local/desktop/infrastructure/rewriting"
@@ -27,10 +28,13 @@ func (a *app) candidate(ctx context.Context, text string) (string, error) {
 	type snapshot struct {
 		request   domain.WritingRequest
 		generator ports.WritingGenerator
+		provider  string
+		client    *chatgptplan.Client
+		job       uint64
 	}
 	ready := make(chan snapshot, 1)
-	mygo.RunOnMain(func() {
-		var s snapshot
+	a.onMain(func() {
+		s := snapshot{provider: a.s.Provider, client: a.client, job: a.job}
 		if ctx.Err() == nil && !a.quitting && a.s.AICandidates && a.s.CanGenerate() {
 			s.request = domain.WritingRequest{Task: "polish", Text: text, Model: a.s.Model, Terms: append([]string(nil), a.s.Profile.Terms...), Instruction: "这是输入法当前尚未上屏的短句。给出一个更自然、简洁的同义候选；严格保留原意，不回答问题，不添加事实、承诺、解释或引号，只输出一行候选。"}
 			if style, ok := a.s.Profile.Style(a.s.StyleID); ok {
@@ -57,9 +61,9 @@ func (a *app) candidate(ctx context.Context, text string) (string, error) {
 	result, err := s.generator.Generate(ctx, s.request, nil)
 	if err != nil {
 		if ctx.Err() == nil {
-			mygo.RunOnMain(func() {
-				if !a.quitting {
-					a.s.Failure = failureKey(err)
+			a.onMain(func() {
+				if !a.quitting && ctx.Err() == nil && a.job == s.job && a.s.Provider == s.provider && a.client == s.client {
+					a.setFailure(err)
 					a.invalidate()
 				}
 			})
@@ -96,7 +100,7 @@ func (a *app) installInputMethod() {
 	}
 	go func() {
 		err := shadowime.Install(resources)
-		mygo.RunOnMain(func() {
+		a.onMain(func() {
 			a.s.IMEInstalling = false
 			if err != nil {
 				a.s.IMEStatus = err.Error()
