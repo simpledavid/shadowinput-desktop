@@ -39,6 +39,12 @@ credentials; it does not revoke the provider-side grant.
   optional HTTP status cross the worker boundary. Callback failure metadata lives
   in session storage and clears with a new sign-in, successful sign-in or logout.
   Raw errors, URLs, response bodies, credentials and text are excluded.
+- The first callback failure was narrowed to token-exchange transport. A Chrome
+  Worker probe reproduced `Illegal invocation` when native fetch was called as an
+  account object's method; unbound/global-bound calls succeeded with the same
+  fixed data URL. The default account transport now binds fetch to the global
+  receiver, covered by a failing-then-passing regression. This browser-runtime
+  reproduction does not itself establish successful OpenAI inference.
 - Successful experimental callback reception, real account login/model listing/inference,
   browser restart/refresh/logout and live-page compatibility remain unverified.
   Desktop OAuth acceptance does not validate the extension.

@@ -94,3 +94,20 @@ test('failed code exchange retains registration so retry does not create another
   assert.equal(new URL((await account.start()).authorizationURL).searchParams.get('client_id'),'oaiapp_test');
   assert.deepEqual(await account.status(),{email:'',connected:false});
 });
+
+test('the native fetch receiver remains the worker global when the account owns transport',async()=>{
+  const original=globalThis.fetch;
+  let requests=0;
+  globalThis.fetch=async function() {
+    assert.equal(this,globalThis,'browser fetch requires its global receiver');
+    requests++;
+    return Response.json({error:'invalid_grant'},{status:400});
+  };
+  try {
+    const account=new Account(storage({hostID:initial().hostID}));
+    const attempt=await account.start();
+    const url=attempt.redirect+'?'+new URLSearchParams({state:attempt.state,code:'synthetic-code',client_id:'oaiapp_test'});
+    await assert.rejects(account.finish(attempt,url),/sign_in_required/);
+    assert.equal(requests,1,'the request must reach the transport');
+  } finally {globalThis.fetch=original;}
+});

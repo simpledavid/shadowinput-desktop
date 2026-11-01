@@ -41,7 +41,7 @@ function requirePlan(session: Session): void {
 
 export class Account {
   private tail: Promise<unknown> = Promise.resolve();
-  constructor(private store: AccountStore, private fetcher: Fetcher = fetch) {}
+  constructor(private store: AccountStore, private fetcher: Fetcher = fetch.bind(globalThis)) {}
 
   private exclusive<T>(operation: () => Promise<T>): Promise<T> {
     const result = this.tail.then(operation);
