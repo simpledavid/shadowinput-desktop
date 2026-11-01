@@ -4,6 +4,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include "continuation.h"
 
 struct ShadowCandidateRequest {
     const uint64_t revision;
@@ -32,7 +33,8 @@ public:
     }
     std::shared_ptr<ShadowCandidateRequest> begin(uint64_t version,uint64_t now) {
         std::lock_guard<std::mutex> lock(mutex);
-        if(!alive || version!=revision || current || started==revision || source.size()<12 || source.size()>512 || now-changed<700)return {};
+        if(!alive || version!=revision || current || started==revision || shadow_runes(source.c_str())<2 ||
+            shadow_runes(source.c_str())>ShadowContextRunes || now-changed<ShadowDebounceMS)return {};
         started=revision;
         current=std::make_shared<ShadowCandidateRequest>(revision,source);
         return current;
@@ -41,7 +43,7 @@ public:
         std::lock_guard<std::mutex> lock(mutex);
         if(current!=request || request->canceled)return;
         current.reset();
-        if(alive && revision==request->revision && text.size()<=256)result=text;
+        if(alive && revision==request->revision && text.size()<=ShadowSuffixRunes)result=text;
     }
     std::wstring read(uint64_t version) {
         std::lock_guard<std::mutex> lock(mutex);

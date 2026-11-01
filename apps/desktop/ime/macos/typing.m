@@ -6,6 +6,7 @@
 #include "../shared/personal_vocabulary_bridge.h"
 #import <InputMethodKit/InputMethodKit.h>
 #include <ctype.h>
+#include "../shadowinput/continuation.h"
 
 // A previous commit older than this no longer predicts the next word.
 static const NSTimeInterval kContextLifetime = 120;
@@ -36,6 +37,8 @@ static BOOL containsHan(NSString *text) {
 @property(copy) NSArray<NSDictionary *> *rankingCandidates;
 @property(copy) NSArray<NSNumber *> *rankingSlots;
 @property NSUInteger rankingRevision;
+@property ShadowContinuation continuation;
+@property NSRange continuationCaret;
 @end
 
 static int sharedMenuMetadata(void *context, uintptr_t session, size_t index, ArionCandidateMetadata *metadata) {
@@ -70,6 +73,7 @@ static NSArray<NSString *> *sharedMenuTexts(const ArionPinyinMenu *menu, NSUInte
         self.pageSize = 9;
         self.contextRanking = YES;
         self.emojiSuggestions = YES;
+        _typoCorrection = ARION_DEFAULT_TYPO_CORRECTION;
     }
     return self;
 }
@@ -124,6 +128,7 @@ static NSArray<NSString *> *sharedMenuTexts(const ArionPinyinMenu *menu, NSUInte
     self.previousCommit = nil;
 }
 - (void)cancel {
+    shadow_context_clear(&_continuation);
     [self freezeRanking];
     arion_shift_reset(&_shiftTap);
     if (self.engineGeneration == self.engine.generation) [self.engine clear:self.session];
@@ -263,6 +268,10 @@ static const char *vocabularyString(id value, NSUInteger maximum) {
         return toggle;
     }
     if (event.type != NSEventTypeKeyDown) return NO;
+    if (!self.composing && ![self sameContinuationCaret]) shadow_context_clear(&_continuation);
+    // Navigation/deletion ends the short-lived sentence even within composition.
+    if (event.keyCode==51 || event.keyCode==117 || (event.keyCode>=115 && event.keyCode<=126))
+        shadow_context_clear(&_continuation);
     arion_shift_interrupt(&_shiftTap);
     int policyKey = event.keyCode == 49 ? ' ' : [event.charactersIgnoringModifiers isEqual:@"."] ? '.' : ArionKeyboardKey(event);
     ArionKeyAction action = arion_key_action(policyKey, ArionKeyboardModifiers(event), self.ascii);
@@ -304,7 +313,11 @@ static const char *vocabularyString(id value, NSUInteger maximum) {
     if (handled && ((key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z') || key == 0xff08 || key == 0xffff)) [self requestRanking];
     // A key the host handles (Return, arrows, Delete) may move its caret away
     // from the last commit, which then stops being context.
-    if (!handled && !wasComposing) self.previousCommit = nil;
+    if (!handled && !wasComposing) {
+        self.previousCommit = nil;
+        shadow_context_clear(&_continuation);
+        if (self.changed) self.changed();
+    }
     return handled;
 }
 // Keys that act on Arion's menu. Returns -1 for keys the engine handles.
@@ -342,23 +355,34 @@ static const char *vocabularyString(id value, NSUInteger maximum) {
     return -1;
 }
 - (NSString *)aiSource {
-    if (!self.live || !self.composing || self.ascii || _menu.page || _menu.expanded || !_menu.count) return nil;
-    const char *input = self.engine.api->get_input(self.session);
-    if (!input || self.engine.api->get_caret_pos(self.session) != strlen(input) ||
-        _menu.metadata[0].emoji || _menu.metadata[0].start != 0 || _menu.metadata[0].end != strlen(input)) return nil;
-    NSString *text = @(_menu.texts[0]);
-    return containsHan(text) ? text : nil;
+    if (!self.live || self.composing || self.ascii) return nil;
+    if (![self sameContinuationCaret]) { shadow_context_clear(&_continuation); return nil; }
+    const char *text=shadow_context_text(&_continuation,(uint64_t)(NSProcessInfo.processInfo.systemUptime*1000));
+    return shadow_runes(text)>=2 ? @(text) : nil;
+}
+- (BOOL)sameContinuationCaret {
+    if (!self.client || ![self.client respondsToSelector:@selector(selectedRange)] ||
+        ![self.client respondsToSelector:@selector(markedRange)]) return NO;
+    NSRange selected=[self.client selectedRange],marked=[self.client markedRange];
+    return selected.location!=NSNotFound && !selected.length && NSEqualRanges(selected,self.continuationCaret) &&
+        (marked.location==NSNotFound || !marked.length);
+}
+- (void)rememberCommit:(NSString *)text {
+    if (!containsHan(text) || self.emojiInComposition || ![self.client respondsToSelector:@selector(selectedRange)]) {
+        shadow_context_clear(&_continuation); return;
+    }
+    self.continuationCaret=[self.client selectedRange];
+    shadow_context_append(&_continuation,text.UTF8String,(uint64_t)(NSProcessInfo.processInfo.systemUptime*1000));
 }
 - (BOOL)commitAI:(NSString *)text revision:(NSUInteger)revision {
-    if (!self.live || !self.composing || self.revision != revision || !text.length || text.length > 256 || ![self verify]) return NO;
-    if ([self.client respondsToSelector:@selector(markedRange)] && [self.client markedRange].location == NSNotFound) return NO;
-    [self freezeRanking];
-    [self.engine clear:self.session];
-    self.composing = NO;
-    self.snapshot = nil; self.engineSnapshot = nil;
-    self.previousCommit = nil; self.emojiInComposition = NO;
-    arion_menu_dispose(&_menu); self.revision++;
-    [self.client insertText:text replacementRange:NSMakeRange(NSNotFound, NSNotFound)];
+    if (self.revision != revision || !self.aiSource.length || !text.length ||
+        shadow_runes(text.UTF8String)>ShadowSuffixRunes ||
+        [text rangeOfCharacterFromSet:NSCharacterSet.controlCharacterSet].location!=NSNotFound) return NO;
+    // Consume before calling the client: reentrancy cannot apply it twice.
+    NSRange anchor=self.continuationCaret;
+    shadow_context_clear(&_continuation); self.revision++;
+    self.previousCommit=nil;
+    [self.client insertText:text replacementRange:anchor];
     if (self.changed) self.changed();
     return YES;
 }
@@ -488,6 +512,7 @@ static const char *vocabularyString(id value, NSUInteger maximum) {
         NSString *context = self.context;
         [self.client insertText:snapshot.commit replacementRange:NSMakeRange(NSNotFound, NSNotFound)];
         if (self.session != session || self.engineGeneration != self.engine.generation) return YES;
+        [self rememberCommit:snapshot.commit];
         // Raw Return commits Latin input; only converted Chinese is learned.
         if (self.contextRanking && !self.emojiInComposition && containsHan(snapshot.commit))
             [self.engine.ranker learn:snapshot.commit after:context];

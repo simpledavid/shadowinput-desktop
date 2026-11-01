@@ -143,7 +143,7 @@ class Service final : public ITfTextInputProcessorEx, public ITfThreadMgrEventSi
         }
         if (message == Learn) { std::unique_ptr<LearnCommit> value(reinterpret_cast<LearnCommit*>(lp)); if (value->generation==self->keyboard.generation()) self->keyboard.learn(value->commit,value->previous,self->typing->rankingFailure); return 0; }
 #ifdef SHADOWINPUT_IME
-        if(message==WM_TIMER && wp==3){if(self->focused && self->typing->composing()){TypingCommand check;check.kind=TypingCommand::Inspect;self->keyRequest(check);}return 0;}
+        if(message==WM_TIMER && wp==3){if(self->focused && self->typing->observing()){TypingCommand check;check.kind=TypingCommand::Inspect;self->keyRequest(check);}return 0;}
 #endif
         if (message == WM_TIMER && wp==2) { self->badge.hide(); KillTimer(window,2); return 0; }
         if (message == WM_TIMER) { self->refreshSettings(); self->connect(); if (!self->session.empty()) { WireMessage check; check.op=L"inspect"; check.activation=self->activation; check.session=self->session; self->request(check); } if (self->typing->composing()) { TypingCommand check; check.kind=TypingCommand::Inspect; self->keyRequest(check); } if (self->languageBar) self->languageBar->changed(); return 0; }
@@ -272,12 +272,12 @@ class Service final : public ITfTextInputProcessorEx, public ITfThreadMgrEventSi
     }
     void clearLayout() { ++layoutEpoch; layoutPending=0; layoutQueued=false; layoutDirty=false; }
     void queueLayout() {
-        if (!window || !focused || !context || !typing->composing()) return;
+        if (!window || !focused || !context || !typing->observing()) return;
         layoutDirty=true;
         if (!layoutQueued && !layoutPending) layoutQueued=PostMessageW(window,Layout,static_cast<WPARAM>(layoutEpoch),0)!=FALSE;
     }
     void requestLayout() {
-        if (!layoutDirty || layoutPending || !focused || !context || !typing->composing()) return;
+        if (!layoutDirty || layoutPending || !focused || !context || !typing->observing()) return;
         layoutDirty=false; const auto ticket=++layoutSerial; layoutPending=ticket;
         auto edit=new LayoutEdit(this,context,activation,typing->revision,ticket); HRESULT result=E_FAIL;
         const HRESULT hr=context->RequestEditSession(client,edit,TF_ES_ASYNC|TF_ES_READ,&result);
@@ -291,6 +291,9 @@ class Service final : public ITfTextInputProcessorEx, public ITfThreadMgrEventSi
         return native;
     }
     bool wantsKey(const NativeKey &key) {
+#ifdef SHADOWINPUT_IME
+        if(typing->hasAI() && key.symbol==0xff09 && !key.modifiers)return true;
+#endif
         if (!session.empty() || typing->composing() || shiftTap.held) return true;
         return typing->available() && (key.shift || arion_key_action(key.symbol,key.modifiers,typing->isASCII())!=ARION_KEY_PASS);
     }
@@ -644,6 +647,9 @@ public:
     HRESULT STDMETHODCALLTYPE OnEndEdit(ITfContext*, TfEditCookie cookie, ITfEditRecord *record) override {
         if (mutating) return S_OK;
         if (typing->composing()) { if (typing->same(cookie)) return S_OK; typing->invalidate(); }
+#ifdef SHADOWINPUT_IME
+        if(typing->sameContinuation(cookie))return S_OK;
+#endif
         // TSF may coalesce or omit the owner's own notification. Compare actual
         // owned text and caret rather than skipping the next notification.
         if (composition && !session.empty() && sameOwned(cookie)) return S_OK;

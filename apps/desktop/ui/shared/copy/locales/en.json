@@ -816,11 +816,11 @@
   "ShadowInputSettings": "Input method settings",
   "ShadowInputSteps": "1. Install the input method. 2. Switch to shadowinput in the system input menu. 3. Type directly in your editor.",
   "ShadowInstallIME": "Install / enable input method",
-  "ShadowCandidateKeys": "Space / numbers: ordinary candidates · Tab: accept AI · Esc: cancel composition",
-  "ShadowAICloud": "When enabled, a typing pause sends the current composition, style and glossary to your selected ChatGPT model, using plan allowance. Surrounding document text is not read; input is not saved.",
-  "ShadowAILocal": "When enabled, your running local model provides candidates after a typing pause. Download and start it first. Ordinary Pinyin works without a model.",
+  "ShadowCandidateKeys": "Space / numbers: commit words · Tab: append AI phrase · Esc: dismiss. Pinyin typo correction is enabled by default.",
+  "ShadowAICloud": "ChatGPT is available in the writing tool for explicit polishing and translation. Automatic phrases always use the local model.",
+  "ShadowAILocal": "Commit words normally, then pause briefly for a local AI phrase. Download and start the model once; it stays ready while AI is enabled. Your writing-tool model choice is separate.",
   "ShadowAIEnable": "Enable automatic AI candidates",
   "ShadowAIDisable": "Disable automatic AI candidates",
-  "ShadowAINote": "AI candidates require a complete composition of at least four characters. Keep typing during generation. Timeout, risky edits or no useful result leave ordinary candidates available.",
+  "ShadowAINote": "At least two committed characters are needed. Only recent words typed here, your style and relevant terms reach the local model. Context expires after 30 seconds; nothing is saved or sent to ChatGPT. Tab appends a suggestion without changing your words. Keep typing to dismiss it.",
   "ShadowWritingTool": "Open long-form writing tool"
 }

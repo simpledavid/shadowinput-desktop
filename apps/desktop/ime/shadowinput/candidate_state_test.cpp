@@ -6,9 +6,9 @@ static void require(bool ok,const char *reason) { if(!ok)throw std::runtime_erro
 int main() {
     try {
         ShadowCandidateState state;
-        state.update("first phrase",1,0);
-        require(!state.begin(1,699),"request started before debounce");
-        auto first=state.begin(1,700);
+        state.update("明天",1,0);
+        require(!state.begin(1,179),"request started before debounce");
+        auto first=state.begin(1,180);
         require(bool(first),"first request missing");
         state.update("second phrase",2,710);
         require(first->canceled,"editing did not cancel the old request");

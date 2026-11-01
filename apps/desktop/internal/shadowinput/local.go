@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"arion.local/core/domain"
+	"arion.local/desktop/infrastructure/localwriting"
 	"arion.local/desktop/infrastructure/provision"
 	"arion.local/desktop/infrastructure/rewriting"
 	"arion.local/desktop/ui/shared/copy"
@@ -14,6 +15,18 @@ import (
 	"arion.local/models"
 	"github.com/egoist/mygo"
 )
+
+// One worker serves automatic local phrases and explicitly submitted writing.
+type localRuntime interface {
+	localwriting.Completer
+	Status() rewriting.Status
+	OnStatus(func(rewriting.Status))
+	Ready() bool
+	Refresh()
+	Enable(context.Context) error
+	Download(context.Context) error
+	Disable()
+}
 
 func (a *app) initLocal() {
 	catalog, err := models.Load()
@@ -26,7 +39,7 @@ func (a *app) initLocal() {
 	a.local.OnStatus(func(rewriting.Status) {
 		// Coalesce download progress, and read the latest snapshot on the UI thread.
 		if a.localStatusQueued.CompareAndSwap(false, true) {
-			mygo.RunOnMain(func() {
+			a.onMain(func() {
 				a.localStatusQueued.Store(false)
 				if !a.quitting {
 					a.applyLocalStatus()
@@ -38,7 +51,19 @@ func (a *app) initLocal() {
 	a.applyLocalStatus()
 	done := make(chan struct{})
 	a.localDone = done
-	go func() { defer close(done); a.local.Refresh() }()
+	go func() {
+		a.local.Refresh()
+		close(done)
+		a.onMain(func() {
+			if a.quitting {
+				return
+			}
+			a.applyLocalStatus()
+			if a.s.AICandidates && a.s.Local.Installed && !a.s.Local.Busy {
+				a.startLocal(false, true)
+			}
+		})
+	}()
 }
 
 func (a *app) applyLocalStatus() {
@@ -71,7 +96,7 @@ func (a *app) startLocal(download, enable bool) {
 	if a.local == nil || a.s.Busy {
 		return
 	}
-	if enable && a.s.Provider != state.ProviderLocal {
+	if enable && a.s.Provider != state.ProviderLocal && !a.s.InputPage && !a.s.AICandidates {
 		return
 	}
 	if a.panel != nil && enable {
@@ -104,7 +129,7 @@ func (a *app) startLocal(download, enable bool) {
 				}
 			}
 		}
-		mygo.RunOnMain(func() {
+		a.onMain(func() {
 			if a.quitting || job != a.localJob {
 				return
 			}
@@ -121,7 +146,9 @@ func (a *app) providerChanged() {
 	a.changed()
 	a.savePreferences()
 	if a.s.Provider == state.ProviderChatGPT {
-		a.startLocal(false, false)
+		if !a.s.AICandidates {
+			a.startLocal(false, false)
+		}
 		if a.client == nil {
 			a.initAccount()
 		} else {

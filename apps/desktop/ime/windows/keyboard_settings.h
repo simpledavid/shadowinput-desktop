@@ -6,7 +6,8 @@
 struct KeyboardSettings {
     size_t pageSize=9;
     int textSize=16;
-    bool emojiSuggestions=true,typoCorrection=false,neuralRanking=false;
+    bool emojiSuggestions=true,neuralRanking=false;
+    bool typoCorrection=ARION_DEFAULT_TYPO_CORRECTION;
     uint32_t fuzzyPinyin=0;
     CandidatePalette palette;
     std::wstring dictationKey;

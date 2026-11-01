@@ -21,6 +21,8 @@
     self.insertions++;
     [self.view insertText:text replacementRange:replacement];
 }
+- (NSRange)selectedRange { return self.view.selectedRange; }
+- (NSRange)markedRange { return self.view.markedRange; }
 @end
 
 static inline void require(BOOL condition, NSString *description) {

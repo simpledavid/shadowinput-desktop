@@ -3,7 +3,6 @@ package shadowinput
 import (
 	"arion.local/core/domain"
 	"arion.local/core/domain/ports"
-	"arion.local/desktop/infrastructure/chatgptplan"
 	"arion.local/desktop/infrastructure/inputcandidate"
 	"arion.local/desktop/infrastructure/localwriting"
 	"arion.local/desktop/infrastructure/rewriting"
@@ -21,31 +20,23 @@ func (a *app) initInputMethod() {
 		return
 	}
 	a.candidates = server
-	_ = server.SetEnabled(a.s.AICandidates && a.s.CanGenerate())
+	_ = server.SetEnabled(a.s.CanSuggest())
 	a.s.IMEStatus = shadowime.Status()
 }
 func (a *app) candidate(ctx context.Context, text string) (string, error) {
 	type snapshot struct {
 		request   domain.WritingRequest
 		generator ports.WritingGenerator
-		provider  string
-		client    *chatgptplan.Client
-		job       uint64
 	}
 	ready := make(chan snapshot, 1)
 	a.onMain(func() {
-		s := snapshot{provider: a.s.Provider, client: a.client, job: a.job}
-		if ctx.Err() == nil && !a.quitting && a.s.AICandidates && a.s.CanGenerate() {
-			s.request = domain.WritingRequest{Task: "polish", Text: text, Model: a.s.Model, Terms: append([]string(nil), a.s.Profile.Terms...), Instruction: "这是输入法当前尚未上屏的短句。给出一个更自然、简洁的同义候选；严格保留原意，不回答问题，不添加事实、承诺、解释或引号，只输出一行候选。"}
+		s := snapshot{}
+		if ctx.Err() == nil && !a.quitting && a.s.CanSuggest() && a.local != nil && a.local.Ready() {
+			s.request = domain.WritingRequest{Task: domain.TaskCompletePhrase, Text: text, Model: rewriting.DefaultModel, Terms: append([]string(nil), a.s.Profile.Terms...)}
 			if style, ok := a.s.Profile.Style(a.s.StyleID); ok {
 				s.request.Style = &style
 			}
-			if a.s.Provider == state.ProviderLocal && a.local != nil && a.local.Ready() {
-				s.generator = localwriting.Generator{Chat: a.local}
-				s.request.Model = rewriting.DefaultModel
-			} else if a.s.Provider == state.ProviderChatGPT && a.client != nil {
-				s.generator = a.client
-			}
+			s.generator = localwriting.Generator{Chat: a.local}
 		}
 		ready <- s
 	})
@@ -60,18 +51,10 @@ func (a *app) candidate(ctx context.Context, text string) (string, error) {
 	}
 	result, err := s.generator.Generate(ctx, s.request, nil)
 	if err != nil {
-		if ctx.Err() == nil {
-			a.onMain(func() {
-				if !a.quitting && ctx.Err() == nil && a.job == s.job && a.s.Provider == s.provider && a.client == s.client {
-					a.setFailure(err)
-					a.invalidate()
-				}
-			})
-		}
 		return "", err
 	}
 	result = strings.TrimSpace(result)
-	if len(domain.ReviewWriting(s.request.Text, result, s.request.Terms).Issues) > 0 {
+	if !inputcandidate.ValidResult(text, result) {
 		return "", inputcandidate.ErrUnavailable
 	}
 	return result, nil
@@ -83,6 +66,11 @@ func (a *app) toggleCandidates() {
 	}
 	a.savePreferences()
 	a.invalidate()
+	if a.s.AICandidates && a.s.Local.Installed && !a.s.Local.Busy && a.local != nil && !a.local.Ready() {
+		a.startLocal(false, true)
+	} else if !a.s.AICandidates && a.s.Provider != state.ProviderLocal {
+		a.startLocal(false, false)
+	}
 }
 func (a *app) installInputMethod() {
 	if a.s.IMEInstalling {

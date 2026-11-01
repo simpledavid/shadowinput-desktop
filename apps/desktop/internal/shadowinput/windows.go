@@ -8,7 +8,7 @@ import (
 
 func (a *app) invalidate() {
 	if a.candidates != nil {
-		_ = a.candidates.SetEnabled(a.s.AICandidates && a.s.CanGenerate())
+		_ = a.candidates.SetEnabled(a.s.CanSuggest())
 	}
 	if a.win != nil {
 		a.win.Invalidate()

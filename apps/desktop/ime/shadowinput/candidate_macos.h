@@ -1,4 +1,5 @@
 // Included only by the shadowinput IMK build. All UI state belongs to the main thread.
+#include "continuation.h"
 static BOOL shadowAIEnabled(void) {
  NSString *base=NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory,NSUserDomainMask,YES).firstObject;
  return [NSFileManager.defaultManager fileExistsAtPath:[base stringByAppendingPathComponent:@"shadowinput/candidate.endpoint"]];
@@ -12,6 +13,7 @@ static BOOL shadowAIEnabled(void) {
 @property NSUInteger revision;
 @property(copy) NSString *text;
 @property(copy) void (^ready)(void);
+@property(copy) BOOL (^valid)(void);
 - (void)update:(NSString *)source revision:(NSUInteger)revision;
 - (void)clear;
 @end
@@ -20,7 +22,7 @@ static BOOL shadowAIEnabled(void) {
  if ((self=[super init])) {
   self.panel=[ArionCandidatePanel new];
   __weak ShadowCandidate *weak=self;
-  self.timer=[NSTimer scheduledTimerWithTimeInterval:0.25 repeats:YES block:^(NSTimer *timer){(void)timer;ShadowCandidate *owner=weak;if(owner && !shadowAIEnabled())[owner clear];}];
+  self.timer=[NSTimer scheduledTimerWithTimeInterval:0.25 repeats:YES block:^(NSTimer *timer){(void)timer;ShadowCandidate *owner=weak;if(owner && (!shadowAIEnabled() || (owner.text.length && owner.valid && !owner.valid())))[owner clear];}];
   NSURLSessionConfiguration *config=NSURLSessionConfiguration.ephemeralSessionConfiguration;
   config.URLCache=nil; config.HTTPCookieStorage=nil; config.connectionProxyDictionary=@{};
   self.session=[NSURLSession sessionWithConfiguration:config];
@@ -31,10 +33,10 @@ static BOOL shadowAIEnabled(void) {
 - (void)dealloc { [self.timer invalidate]; [self.task cancel]; [self.session invalidateAndCancel]; }
 - (void)update:(NSString *)source revision:(NSUInteger)revision {
  [self clear]; self.revision=revision;
- if (source.length<4 || source.length>128) return;
+ if (!source || shadow_runes(source.UTF8String)<2 || shadow_runes(source.UTF8String)>ShadowContextRunes) return;
  NSUInteger generation=self.generation;
  __weak ShadowCandidate *weak=self;
- dispatch_after(dispatch_time(DISPATCH_TIME_NOW,700*NSEC_PER_MSEC),dispatch_get_main_queue(),^{
+ dispatch_after(dispatch_time(DISPATCH_TIME_NOW,ShadowDebounceMS*NSEC_PER_MSEC),dispatch_get_main_queue(),^{
   ShadowCandidate *owner=weak; if (!owner || owner.generation!=generation) return;
   NSString *base=NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory,NSUserDomainMask,YES).firstObject;
   NSString *file=[base stringByAppendingPathComponent:@"shadowinput/candidate.endpoint"];
@@ -51,7 +53,7 @@ static BOOL shadowAIEnabled(void) {
   owner.task=[owner.session dataTaskWithRequest:request completionHandler:^(NSData *data,NSURLResponse *response,NSError *error) {
    if (error || ![response isKindOfClass:NSHTTPURLResponse.class] || ((NSHTTPURLResponse *)response).statusCode!=200 || data.length>1024) return;
    NSString *text=[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-   if (!text.length || text.length>256 || [text rangeOfCharacterFromSet:NSCharacterSet.controlCharacterSet].location!=NSNotFound) return;
+   if (!text.length || shadow_runes(text.UTF8String)>ShadowSuffixRunes || [text rangeOfCharacterFromSet:NSCharacterSet.controlCharacterSet].location!=NSNotFound) return;
    dispatch_async(dispatch_get_main_queue(),^{
     ShadowCandidate *live=weak; if (!live || live.generation!=generation) return;
     live.text=text; live.task=nil; if (live.ready) live.ready();

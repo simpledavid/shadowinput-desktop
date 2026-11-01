@@ -15,7 +15,7 @@ func TestBoundaryAndCompletedCandidate(t *testing.T) {
 	var calls atomic.Int32
 	s, e := Start(t.TempDir(), func(ctx context.Context, text string) (string, error) {
 		calls.Add(1)
-		return "明天一起讨论一下", nil
+		return "一起讨论一下", nil
 	})
 	if e != nil {
 		t.Fatal(e)
@@ -26,7 +26,7 @@ func TestBoundaryAndCompletedCandidate(t *testing.T) {
 	for _, tc := range []struct {
 		auth, origin, text string
 		status             int
-	}{{"", "", "明天讨论一下", 403}, {s.token, "https://evil.example", "明天讨论一下", 403}, {s.token, "", "hi", 400}, {s.token, "", "明天讨论一下", 200}} {
+	}{{"", "", "明天讨论一下", 403}, {s.token, "https://evil.example", "明天讨论一下", 403}, {s.token, "", "字", 400}, {s.token, "", "明天", 200}} {
 		req, _ := http.NewRequest("POST", "http://"+lines[0]+"/candidate", strings.NewReader(tc.text))
 		if tc.auth != "" {
 			req.Header.Set("Authorization", "Bearer "+tc.auth)
@@ -43,7 +43,7 @@ func TestBoundaryAndCompletedCandidate(t *testing.T) {
 		if r.StatusCode != tc.status {
 			t.Fatalf("status %d want %d", r.StatusCode, tc.status)
 		}
-		if tc.status == 200 && string(body) != "明天一起讨论一下" {
+		if tc.status == 200 && string(body) != "一起讨论一下" {
 			t.Fatal("missing result")
 		}
 	}
@@ -92,10 +92,21 @@ func TestRevokeCancelsAndDropsLateResult(t *testing.T) {
 	}
 }
 func TestRejectInvalidCandidate(t *testing.T) {
-	for _, text := range []string{"", "原来内容", "第一行\n第二行", "包含\t制表符", "包含\x1b控制符", strings.Repeat("字", 129), "<think>内部"} {
+	for _, text := range []string{"", "原来内容", "原来内容再继续", "内容", "第一行\n第二行", "包含\t制表符", "包含\x1b控制符", strings.Repeat("字", 25), "<think>内部"} {
 		if ValidResult("原来内容", text) {
 			t.Fatalf("accepted %q", text)
 		}
+	}
+}
+
+func TestRejectRepeatedBoundaryAndAssistantReplies(t *testing.T) {
+	for _, tc := range [][2]string{{"今天下午", "下午好"}, {"麻烦帮我", "请提供具体需求"}, {"我想问一下", "有什么可以帮您的吗"}} {
+		if ValidResult(tc[0], tc[1]) {
+			t.Fatalf("not a continuation: %q + %q", tc[0], tc[1])
+		}
+	}
+	if !ValidResult("明天我们", "一起讨论一下") {
+		t.Fatal("natural continuation rejected")
 	}
 }
 

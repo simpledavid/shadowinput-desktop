@@ -79,7 +79,7 @@ static NSString *applyKeyboardSettings(ArionTyping *typing, ArionCandidatePanel 
     ArionCandidateSize size = ArionCandidateSizeMedium;
     ArionCandidateAppearance appearance = ArionCandidateAppearanceSystem;
     NSColor *lightFill = nil, *lightText = nil, *darkFill = nil, *darkText = nil;
-    BOOL emojiSuggestions = YES, typoCorrection = NO, neuralRanking = NO;
+    BOOL emojiSuggestions = YES, typoCorrection = ARION_DEFAULT_TYPO_CORRECTION, neuralRanking = NO;
     uint32_t fuzzyPinyin = 0;
     NSString *dictationKey = nil;
     NSData *data = [NSData dataWithContentsOfFile:[applicationSupport() stringByAppendingPathComponent:@"keyboard.json"]];
@@ -351,6 +351,7 @@ static NSString *voiceInputTitle(NSString *dictationKey) {
         self.ai = [ShadowCandidate new];
         __weak ArionInputController *weakSelf = self;
         self.ai.ready = ^{ [weakSelf showAI]; };
+        self.ai.valid = ^{ return [ArionBridge shared].active==weakSelf && weakSelf.typing.aiSource.length && weakSelf.typing.revision==weakSelf.ai.revision; };
         self.ai.panel.selected = ^(NSUInteger index, NSUInteger row, NSUInteger revision) {
             (void)index; (void)row;
             ArionInputController *owner=weakSelf;
@@ -447,12 +448,11 @@ static NSString *voiceInputTitle(NSString *dictationKey) {
 }
 #ifdef SHADOWINPUT_IME
 - (void)showAI {
-    if ([ArionBridge shared].active != self || !self.typing.composing || self.typing.revision != self.ai.revision || !self.ai.text.length) { [self.ai clear]; return; }
+    if ([ArionBridge shared].active != self || !self.typing.aiSource.length || self.typing.revision != self.ai.revision || !self.ai.text.length) { [self.ai clear]; return; }
     NSRect caret=NSZeroRect;
-    [self.client attributesForCharacterIndex:0 lineHeightRectangle:&caret];
+    [self.client attributesForCharacterIndex:[self.client selectedRange].location lineHeightRectangle:&caret];
     if (NSIsEmptyRect(caret)) { [self.ai.panel hide]; return; }
     // A separate row leaves ordinary candidate indices and Space unchanged.
-    caret.origin.y -= 48;
     [self.ai.panel showCandidates:@[[@"AI · Tab  " stringByAppendingString:self.ai.text]] highlighted:0 lastPage:YES revision:self.ai.revision caretRect:caret];
 }
 #endif

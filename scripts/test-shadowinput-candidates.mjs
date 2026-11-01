@@ -10,8 +10,10 @@ const windows=process.platform==='win32',cross=process.argv.includes('--cross-wi
 const cxx=process.env.CXX??(windows?'g++':'c++');
 const source=path.join(root,'apps/desktop/ime/shadowinput');
 const state=path.join(output,windows?'candidate-state.exe':'candidate-state');
-run(cxx,['-std=c++17','-Wall','-Wextra','-Werror',path.join(source,'candidate_state_test.cpp'),'-o',state]);
-run(state,[]);
+for(const fixture of ['continuation_test.cpp','candidate_state_test.cpp']) {
+ run(cxx,['-std=c++17','-Wall','-Wextra','-Werror',path.join(source,fixture),'-o',state]);
+ run(state,[]);
+}
 if(windows || cross) {
  const transport=path.join(output,'candidate-http.exe');
  run(cross?'x86_64-w64-mingw32-g++':cxx,['-std=c++17','-Wall','-Wextra','-Werror','-static',path.join(source,'candidate_http_windows_test.cpp'),'-o',transport,'-lwinhttp','-lws2_32']);

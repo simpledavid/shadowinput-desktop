@@ -816,11 +816,11 @@
   "ShadowInputSettings": "输入法设置",
   "ShadowInputSteps": "1. 安装输入法　2. 在系统输入菜单切换到 shadowinput　3. 在微信、文档等输入框直接打字。",
   "ShadowInstallIME": "安装 / 启用输入法",
-  "ShadowCandidateKeys": "空格 / 数字：普通候选　Tab：采纳 AI 候选　Esc：取消组合",
-  "ShadowAICloud": "开启后，输入停顿时会将当前尚未上屏的短句及你的风格、词表发给所选 ChatGPT 模型，消耗套餐用量。不读取周围文档，不保存输入记录。",
-  "ShadowAILocal": "开启后，输入停顿时由本机模型生成候选；需要先下载并启动模型。普通拼音输入不需要模型。",
+  "ShadowCandidateKeys": "空格 / 数字：选词上屏　Tab：追加 AI 短语　Esc：取消。默认开启拼音纠错。",
+  "ShadowAICloud": "ChatGPT 可在写作工具里用于主动润色、翻译。自动短语联想始终使用本地模型。",
+  "ShadowAILocal": "正常按空格上屏，稍停一下，本地 AI 接着联想。首次下载并启动模型后，开启 AI 时会保持就绪。写作工具中的模型选择互不影响。",
   "ShadowAIEnable": "开启自动 AI 候选",
   "ShadowAIDisable": "关闭自动 AI 候选",
-  "ShadowAINote": "AI 候选仅针对当前完整短句，至少 4 个字；生成期间可以继续输入。超时、风险变化或无合适结果时，只保留普通候选。",
+  "ShadowAINote": "至少上屏 2 个字后开始联想。仅使用当前输入位置最近的词语、风格及相关词表；30 秒后清空上下文，不保存、不发给 ChatGPT。Tab 只追加建议，不改动已输入的文字；继续打字即可忽略。",
   "ShadowWritingTool": "打开长文写作工具"
 }

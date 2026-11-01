@@ -69,6 +69,10 @@ func (s *State) CanGenerate() bool {
 	return s.Provider == ProviderChatGPT && s.Connected && s.Model != ""
 }
 
+func (s *State) CanSuggest() bool {
+	return s.AICandidates && s.ProfileReady && !s.Busy && !s.Settings && s.Local.State == "ready" && !s.Local.Busy
+}
+
 // Actions are supplied by the composition root. Views never access credentials.
 type Actions struct {
 	InstallIME, ToggleCandidates, OpenInputSettings                                                                                         func()

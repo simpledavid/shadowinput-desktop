@@ -42,7 +42,7 @@ type app struct {
 	job               uint64
 	cancel            context.CancelFunc
 	quitting          bool
-	local             *rewriting.Service
+	local             localRuntime
 	localDone         chan struct{}
 	localCancel       context.CancelFunc
 	localJob          uint64
@@ -130,7 +130,7 @@ func (a *app) show() {
 	}
 }
 func (a *app) hide() {
-	if a.s.Local.Busy {
+	if a.s.Local.Busy && !a.s.AICandidates {
 		a.startLocal(false, false)
 	}
 	a.stop()
