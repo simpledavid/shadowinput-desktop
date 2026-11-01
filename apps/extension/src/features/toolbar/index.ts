@@ -16,6 +16,8 @@ export async function mountToolbar():Promise<void> {
   if(!(status instanceof HTMLParagraphElement) || !(actions instanceof HTMLElement) ||
     !(target instanceof HTMLSelectElement) || !(model instanceof HTMLSelectElement) || !(automatic instanceof HTMLInputElement))throw new Error('invalid_response');
   const targetField=target,modelField=model;
+  const pageButtons=Array.from(document.querySelectorAll<HTMLButtonElement>('[data-action]'));
+  pageButtons.forEach(button=>{button.disabled=true;});
   document.querySelectorAll<HTMLElement>('[data-copy]').forEach(node=>{
     for(const [key,value] of Object.entries({...text,...t}))if(key===node.dataset.copy && typeof value==='string')node.textContent=value;
   });
@@ -23,6 +25,7 @@ export async function mountToolbar():Promise<void> {
   target.value=config.target;
   async function run(action:()=>Promise<void>) {
     status!.textContent='';
+    status!.classList.add('error');
     try{await action();}catch(error){status!.textContent=t.errors[errorCode(error)]+diagnosticText(diagnosticOf(error),t.stages);}
   }
   const account=object(await request('status'));
@@ -33,10 +36,16 @@ export async function mountToolbar():Promise<void> {
   login.addEventListener('click',()=>void run(async()=>{await request('connect');window.close();}));
   document.querySelector('#settings')?.addEventListener('click',()=>{void chrome.tabs.create({url:chrome.runtime.getURL('panel.html')});window.close();});
   let host:string|undefined;
-  await run(async()=>{
+  try {
     const site=object(await request('currentSite'));host=requiredString(site.origin);automatic.checked=site.automatic===true;
     const hostLabel=document.querySelector('#host');if(hostLabel)hostLabel.textContent=new URL(host).hostname;
-  });
+  } catch(error) {
+    const unsupported=errorCode(error)==='unsupported_page';
+    status.classList.toggle('error',!unsupported);
+    status.textContent=unsupported?text.noPage:t.errors[errorCode(error)];
+  }
+  const siteSetting=document.querySelector('.site-setting');
+  if(siteSetting instanceof HTMLElement)siteSetting.hidden=!host;
   automatic.disabled=!host;
   automatic.addEventListener('change',()=>{
     const enabled=automatic.checked;
@@ -55,15 +64,16 @@ export async function mountToolbar():Promise<void> {
   }
   target.addEventListener('change',()=>void run(save));
   model.addEventListener('change',()=>void run(save));
-  document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach(button=>{
+  pageButtons.forEach(button=>{
     button.addEventListener('click',()=>void run(async()=>{await save();await request('pageAction',{action:button.dataset.action});window.close();}));
   });
-  if(account.connected===true)await run(async()=>{
+  if(account.connected===true)try {
     const list=await request('models');
     if(!Array.isArray(list))throw new Error('invalid_response');
     const options=list.map(value=>{const item=object(value);return new Option(requiredString(item.name),requiredString(item.id));});
     model.replaceChildren(...options);
     if(options.some(option=>option.value===config.model))model.value=config.model;
     await save();
-  });
+    pageButtons.forEach(button=>{button.disabled=!host || !model.value;});
+  } catch(error) {status.classList.add('error');status.textContent=t.errors[errorCode(error)]+diagnosticText(diagnosticOf(error),t.stages);}
 }

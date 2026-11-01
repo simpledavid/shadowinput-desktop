@@ -65,3 +65,55 @@ test('a failed callback exposes only safe stage diagnostics to the workbench',as
   assert.deepEqual(reply.data.diagnostic,{stage:'token_exchange',code:'network_error',kind:'transport'});
   assert.doesNotMatch(JSON.stringify(reply),/private-|verifier|access_token/);
 });
+
+test('an old model request cannot sign out a newly stored account session',async()=>{
+  local.account={hostID:'host',clientID:'oaiapp_test',subject:'synthetic-user',session:{
+    email:'test@example.invalid',access:'old-access',refresh:'old-refresh',scope:'chatgpt.tokens.use.direct',expiresAt:Date.now()+3600000,
+  }};
+  const original=globalThis.fetch;
+  let rejectRequest,started;
+  const sent=new Promise(resolve=>{started=resolve;});
+  globalThis.fetch=async()=>{started();return new Promise(resolve=>{rejectRequest=resolve;});};
+  try {
+    const sender={id:'test-extension',url:'chrome-extension://test-extension/panel.html'};
+    const response=new Promise(resolve=>events.message({type:'models'},sender,resolve));
+    await sent;
+    local.account.session={...local.account.session,access:'new-access',refresh:'new-refresh'};
+    rejectRequest(new Response('',{status:401}));
+    assert.equal((await response).error,'sign_in_required');
+    const status=await new Promise(resolve=>events.message({type:'status'},sender,resolve));
+    assert.equal(status.data.connected,true,'late old-session errors must preserve the new login');
+    assert.equal(local.account.session.access,'new-access');
+  } finally {globalThis.fetch=original;}
+});
+
+test('a current session rejected by the provider becomes signed out',async()=>{
+  const original=globalThis.fetch;
+  globalThis.fetch=async()=>new Response('',{status:401});
+  try {
+    local.account.session={email:'test@example.invalid',access:'current',refresh:'refresh',scope:'chatgpt.tokens.use.direct',expiresAt:Date.now()+3600000};
+    const sender={id:'test-extension',url:'chrome-extension://test-extension/panel.html'};
+    const reply=await new Promise(resolve=>events.message({type:'models'},sender,resolve));
+    assert.equal(reply.error,'sign_in_required');
+    assert.equal(local.account.session,undefined);
+  } finally {globalThis.fetch=original;}
+});
+
+test('closing the text workbench cancels its in-flight translation',async()=>{
+  const original=globalThis.fetch;
+  let signal,release,started;
+  const sent=new Promise(resolve=>{started=resolve;});
+  globalThis.fetch=async(_url,options)=>{signal=options.signal;started();return new Promise(resolve=>{release=resolve;});};
+  local.account.session={email:'test@example.invalid',access:'current',refresh:'refresh',scope:'chatgpt.tokens.use.direct',expiresAt:Date.now()+3600000};
+  const sender={id:'test-extension',url:'chrome-extension://test-extension/panel.html',documentId:'workbench',frameId:0,tab:{id:88}};
+  const response=new Promise(resolve=>events.message({type:'translate',text:'Synthetic sentence.',target:'zh-CN',model:'test-model'},sender,resolve));
+  await sent;
+  try {
+    events.removed(88);await tick();
+    assert.equal(signal.aborted,true,'closing the owner should cancel provider work');
+  } finally {
+    release(new Response(''));
+    await response;
+    globalThis.fetch=original;
+  }
+});

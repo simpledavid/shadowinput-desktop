@@ -5,7 +5,7 @@ import { begin, callback } from './oauth.js';
 import { verifyIdentity } from './identity.js';
 import type { Attempt, Registration } from './index.js';
 import {atStage} from '../../shared/diagnostics.js';
-import {HttpError} from '../../shared/errors.js';
+import {HttpError,errorCode} from '../../shared/errors.js';
 
 export type Session = {email: string; access: string; refresh: string; scope: string; expiresAt: number};
 export type AccountRecord = Registration & {session?: Session};
@@ -111,6 +111,19 @@ export class Account {
       requirePlan(session);
       return session.access;
     });
+  }
+
+  async withAccess<T>(operation:(access:string)=>Promise<T>):Promise<T> {
+    const access=await this.access();
+    try{return await operation(access);}catch(error) {
+      if(errorCode(error)==='sign_in_required')await this.exclusive(async()=>{
+        const record=await this.store.load();
+        if(record.session?.access!==access)return;
+        delete record.session;
+        await this.store.save(record);
+      });
+      throw error;
+    }
   }
 
   logout(): Promise<void> {

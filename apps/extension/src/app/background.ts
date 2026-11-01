@@ -83,7 +83,7 @@ async function dispatch(raw: unknown, sender: chrome.runtime.MessageSender): Pro
     case 'logout':
       jobs.cancelAll();
       return ordered(async()=>{await cancelSignIn();await account.logout();});
-    case 'models': return models(await account.access());
+    case 'models': return account.withAccess(access=>models(access));
     case 'settings': return preferences();
     case 'saveSettings': return savePreferences(message.settings);
     case 'currentSite': return currentSite();
@@ -95,10 +95,10 @@ async function dispatch(raw: unknown, sender: chrome.runtime.MessageSender): Pro
     case 'contentConfig': return contentConfig(requiredString(sender.url));
     case 'translateBlock': {
       const config=await preferences();
-      return jobs.run(owner,requiredString(message.id),async signal=>translate(await account.access(),requiredString(message.text),config.target,config.model,signal));
+      return jobs.run(owner,requiredString(message.id),signal=>account.withAccess(access=>translate(access,requiredString(message.text),config.target,config.model,signal)));
     }
     case 'translate': {
-      return jobs.run(owner,crypto.randomUUID(),async signal=>translate(await account.access(),requiredString(message.text),requiredString(message.target),requiredString(message.model),signal));
+      return jobs.run(owner,crypto.randomUUID(),signal=>account.withAccess(access=>translate(access,requiredString(message.text),requiredString(message.target),requiredString(message.model),signal)));
     }
     case 'cancel': jobs.cancel(owner); return;
     default: throw new Error('invalid_input');
@@ -127,15 +127,9 @@ chrome.runtime.onMessage.addListener((message:unknown,sender,respond)=>{
       origin(requiredString(sender.url));
       if(!['translateBlock','contentConfig','cancel'].includes(String(object(message).type)))return false;
     } catch {return false;}
-    documentTabs.set(sender.documentId,sender.tab.id);
   }
-  void dispatch(message,sender).then(data=>respond({ok:true,data}),async error=>{
-    let code=errorCode(error);
-    if(code==='sign_in_required') {
-      try{await account.logout();}catch(storageError){code=errorCode(storageError);}
-    }
-    respond({ok:false,error:code,diagnostic:diagnosticOf(error)});
-  });
+  if(sender.documentId && sender.tab?.id!==undefined)documentTabs.set(sender.documentId,sender.tab.id);
+  void dispatch(message,sender).then(data=>respond({ok:true,data}),error=>respond({ok:false,error:errorCode(error),diagnostic:diagnosticOf(error)}));
   return true;
 });
 chrome.webNavigation.onCommitted.addListener(details=>{
