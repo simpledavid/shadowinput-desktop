@@ -2,7 +2,7 @@
 
 The buildless website for [shadowinput.com](https://shadowinput.com/). Serve `public/` directly. This directory is separate from the upstream Arion website in `apps/site/`.
 
-The interactive examples use preset text. They do not call a model. Desktop downloads link to the published `v0.1.0-preview.3` release; later desktop source changes are not included in those archives.
+The interactive examples use preset text. They do not call a model. Desktop downloads link directly to the `v0.1.0-preview.4` macOS DMG and Windows EXE installer. Portable ZIPs, corresponding source and checksums remain on the release page.
 
 ## Cloudflare deployment
 
