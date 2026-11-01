@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {buildShadowWindowsIME} from './lib/build-shadowinput-windows-ime.mjs';
 import {buildIMELearning} from './lib/build-ime-learning.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const brandAssets=path.join(root,'apps/desktop/ui/shared/shadowbrand');
 const target=process.argv[2]??'macos';
 if(!['macos','windows'].includes(target))throw new Error('Choose macos or windows');
 const runtime=path.join(root,'apps/desktop/resources',target==='macos'?'darwin':'windows-amd64','keyboard','runtime.json');
@@ -47,6 +48,7 @@ rmSync(bundle,{recursive:true,force:true});
 for(const dir of ['MacOS','Resources','Frameworks'])mkdirSync(path.join(bundle,'Contents',dir),{recursive:true});
 let plist=readFileSync(path.join(source,'macos/Info.plist'),'utf8').replaceAll('<string>Arion</string>','<string>shadowinput</string>');
 plist=plist.replace('</dict>\n</plist>','<key>ArionAppIdentifier</key><string>org.shadowinput.desktop.dev</string>\n</dict>\n</plist>');
+plist=plist.replace('</dict>\n</plist>','<key>CFBundleIconFile</key><string>shadowinput.icns</string>\n</dict>\n</plist>');
 writeFileSync(path.join(bundle,'Contents/Info.plist'),plist);
 const objects=path.join(work,'objects');mkdirSync(objects,{recursive:true});
 const native=[];
@@ -66,8 +68,13 @@ for(const [locale,language] of [['zh-CN','zh-Hans'],['en','en']]) {
  writeFileSync(path.join(dir,'Localizable.strings'),lines.join('\n')+'\n');
  writeFileSync(path.join(dir,'InfoPlist.strings'),'"CFBundleName"="shadowinput";\n"CFBundleDisplayName"="shadowinput";\n"org.shadowinput.inputmethod.shadowinput.pinyin"="shadowinput";\n');
 }
-run('go',['run','./cmd/arion-icon','-menu','32',path.join(objects,'icon.png')],path.join(root,'apps/desktop'));
-run('sips',['-s','format','tiff',path.join(objects,'icon.png'),'--out',path.join(bundle,'Contents/Resources/menu_icon.tiff')]);
+copyFileSync(path.join(brandAssets,'shadowinput.icns'),path.join(bundle,'Contents/Resources/shadowinput.icns'));
+const menuSlices=[16,32].map(size=>{
+ const tiff=path.join(objects,`menu-${size}.tiff`);
+ run('sips',['-s','format','tiff',path.join(brandAssets,`icon-${size}.png`),'--out',tiff]);
+ return tiff;
+});
+run('tiffutil',['-cathidpicheck',...menuSlices,'-out',path.join(bundle,'Contents/Resources/menu_icon.tiff')]);
 for(const file of [path.join(bundle,'Contents/Frameworks/librime.1.dylib'),bundle])run('/usr/bin/codesign',['--force','--sign','-',file]);
 run('/usr/bin/codesign',['--verify','--deep','--strict',bundle]);
 mkdirSync(path.dirname(outputBundle),{recursive:true});

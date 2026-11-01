@@ -139,6 +139,13 @@ public:
         if (!value) return E_POINTER;
         *value=nullptr;
         const int width=GetSystemMetrics(SM_CXSMICON),height=GetSystemMetrics(SM_CYSMICON);
+#ifdef SHADOWINPUT_IME
+        HMODULE imageModule=nullptr;
+        if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            reinterpret_cast<LPCWSTR>(ArionName),&imageModule)) return E_FAIL;
+        *value=static_cast<HICON>(LoadImageW(imageModule,MAKEINTRESOURCEW(1),IMAGE_ICON,width,height,LR_DEFAULTCOLOR));
+        return *value?S_OK:E_FAIL;
+#else
         HDC screen=GetDC(nullptr);
         if (!screen) return E_FAIL;
         HDC dc=CreateCompatibleDC(screen),maskDC=CreateCompatibleDC(screen);
@@ -168,6 +175,7 @@ public:
         if (color) DeleteObject(color);
         ReleaseDC(nullptr,screen);
         return hr;
+#endif
     }
     HRESULT STDMETHODCALLTYPE OnClick(TfLBIClick click,POINT point,const RECT*) override {
         if (!state || !command) return E_FAIL;

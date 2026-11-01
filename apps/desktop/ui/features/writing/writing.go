@@ -3,6 +3,7 @@ package writing
 import (
 	"arion.local/desktop/ui/shared/copy"
 	"arion.local/desktop/ui/shared/kit"
+	"arion.local/desktop/ui/shared/shadowbrand"
 	"arion.local/desktop/ui/shared/theme"
 	state "arion.local/desktop/ui/shared/writing"
 	"github.com/egoist/mygo/ui"
@@ -28,6 +29,7 @@ func Editor(c *ui.Context, s *state.State, a state.Actions) {
 	}
 	ui.Column(c).Fill().Padding(18).Gap(12).Children(func() {
 		ui.Row(c).AlignItems(ui.Center).Gap(10).Children(func() {
+			ui.Image(c, shadowbrand.Mark).Size(26, 26).Shrink(0)
 			ui.Text(c, state.Name).FontSize(theme.Heading).FontWeight(650).Grow(1)
 			if !s.Compact {
 				if kit.Select(c.Key("locale"), &s.Locale, []copy.Locale{copy.English, copy.SimplifiedChinese}, func(l copy.Locale) string {

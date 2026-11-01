@@ -24,6 +24,7 @@ import (
 	"arion.local/desktop/infrastructure/shadowime"
 	"arion.local/desktop/ui/pages/writing"
 	"arion.local/desktop/ui/shared/copy"
+	"arion.local/desktop/ui/shared/shadowbrand"
 	state "arion.local/desktop/ui/shared/writing"
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
@@ -70,6 +71,8 @@ func (a *app) ready() {
 	a.s.AccessRequired = needsAccess()
 	mygo.App.SetMenu(mygo.NewMenu([]*mygo.MenuItem{{Role: mygo.RoleAppMenu}, {Role: mygo.RoleEditMenu}}))
 	a.win = mygo.NewWindow(mygo.WindowOptions{Title: state.Name, Width: 820, Height: 820, MinWidth: 620, MinHeight: 640, Content: ui.View(writing.View(&a.s, a.actions()))})
+	_ = a.win.SetIcon(shadowbrand.AppPNG)
+	_ = mygo.App.Dock.SetIcon(shadowbrand.AppPNG)
 	a.win.OnClose(func(e *mygo.CloseEvent) {
 		if !a.quitting {
 			e.PreventDefault()

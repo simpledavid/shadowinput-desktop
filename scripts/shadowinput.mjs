@@ -1,6 +1,6 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, cpSync, copyFileSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, cpSync, copyFileSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verifyWindowsPEDependencies } from './lib/windows-pe.mjs';
@@ -13,6 +13,7 @@ const mode = process.argv[2] ?? 'check';
 const nativeTarget = process.platform === 'darwin' ? 'macos' : process.platform === 'win32' ? 'windows' : '';
 const target = process.argv[3] ?? nativeTarget;
 const source = './apps/desktop/cmd/shadowinput';
+const brandAssets = path.join(root, 'apps/desktop/ui/shared/shadowbrand');
 const repository = 'https://github.com/simpledavid/shadowinput-desktop';
 function output(command, args, env = process.env) {
   return execFileSync(command, args, { cwd: root, env, encoding: 'utf8' }).trim();
@@ -23,6 +24,7 @@ function run(command, args, env = process.env, cwd = root) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 if (mode === 'check') {
+  run('go', ['run', './apps/desktop/cmd/shadowinput-icon', '-check']);
   run('go', ['test', '-race', './packages/core/...', './apps/desktop/infrastructure/chatgptplan', './apps/desktop/infrastructure/localwriting', './apps/desktop/infrastructure/llm/...', './apps/desktop/infrastructure/rewriting', './apps/desktop/infrastructure/provision', './apps/desktop/cmd/arion-llm', './apps/desktop/infrastructure/writingprefs', './apps/desktop/infrastructure/inputcandidate', './apps/desktop/infrastructure/shadowime', './apps/desktop/ui/shared/writing', './apps/desktop/internal/oauthloopback', './apps/desktop/internal/shadowinput', './apps/desktop/ui/features/writing', './apps/desktop/ui/shared/copy']);
   run('go', ['vet', source, './apps/desktop/infrastructure/chatgptplan', './apps/desktop/internal/shadowinput']);
   run(process.execPath, ['scripts/check-repository.mjs']);
@@ -63,7 +65,24 @@ if (mode === 'check') {
     cpSync(path.join(root,'apps/desktop/resources/shadowinput/windows/ime'),path.join(resources,'ime'),{recursive:true});
     cpSync(path.join(root,'apps/desktop/resources/windows-amd64/keyboard'),path.join(resources,'keyboard'),{recursive:true});
   }
-  run('go', ['build', '-trimpath', ...(target === 'windows' ? ['-ldflags=-H=windowsgui'] : []), '-o', executable, source], env);
+  const iconName = target === 'macos' ? 'shadowinput.icns' : 'shadowinput.ico';
+  copyFileSync(path.join(brandAssets, iconName), path.join(resources, iconName));
+  const goArgs = ['build', '-trimpath', ...(target === 'windows' ? ['-ldflags=-H=windowsgui'] : []), '-o', executable, source];
+  if (target === 'windows') {
+    // Go's linker embeds COFF resources without requiring cgo. Do not leave a
+    // stale .syso behind, or overwrite resources owned by another build.
+    const resource = path.join(root, source, 'icon_windows_amd64.syso');
+    if (existsSync(resource)) throw new Error('Another icon resource build is in progress; refusing to overwrite its .syso');
+    const rc = path.join(out, 'shadowinput-brand.rc');
+    writeFileSync(rc, '1 ICON "shadowinput.ico"\n');
+    try {
+      execFileSync(process.env.WINDRES || (process.platform === 'win32' ? 'windres' : 'x86_64-w64-mingw32-windres'), ['-I', resources, '-i', rc, '-O', 'coff', '-o', resource], { cwd: root, stdio: 'inherit' });
+      execFileSync('go', goArgs, { cwd: root, env, stdio: 'inherit' });
+    } finally {
+      rmSync(resource, { force: true });
+      rmSync(rc, { force: true });
+    }
+  } else run('go', goArgs, env);
   copyFileSync(path.join(root, 'LICENSE'), path.join(resources, 'LICENSE.txt'));
   copyFileSync(path.join(root, 'docs/project/shadowinput.md'), path.join(resources, 'SOURCE-AND-NOTICES.md'));
   const licenses = path.join(resources, 'licenses');
@@ -120,6 +139,7 @@ Based on AstraFoundry/Arion. Distributed under AGPL-3.0; upstream and dependency
 <key>CFBundleName</key><string>shadowinput</string>
 <key>CFBundleDisplayName</key><string>shadowinput</string>
 <key>CFBundleExecutable</key><string>shadowinput</string>
+<key>CFBundleIconFile</key><string>shadowinput.icns</string>
 <key>CFBundleIdentifier</key><string>org.shadowinput.desktop.dev</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>${version.slice(1).split('-')[0]}</string>

@@ -1,5 +1,7 @@
 # shadowinput
 
+<img src="apps/desktop/ui/shared/shadowbrand/mark.svg" width="64" height="64" alt="shadowinput">
+
 Keyboard-first AI writing for **macOS and Windows**, built with Go + MyGo and based on [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion).
 
 **Experimental system input method:** this branch adds native Pinyin with a separate, opt-in AI candidate row. macOS system enablement remains unresolved after reported consent; Windows TSF has only been cross-built. See [workflow, build prerequisites and current acceptance limits](docs/project/shadowinput-ime.md). The existing preview.5 downloads below do not contain this input method.

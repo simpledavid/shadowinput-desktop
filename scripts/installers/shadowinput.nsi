@@ -23,6 +23,8 @@ VIAddVersionKey "LegalCopyright" "shadowinput contributors; based on AstraFoundr
 
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\shadowinput"
 !define MUI_ABORTWARNING
+!define MUI_ICON "${PAYLOAD}/shadowinput.ico"
+!define MUI_UNICON "${PAYLOAD}/shadowinput.ico"
 !define MUI_WELCOMEPAGE_TITLE "安装 shadowinput"
 !define MUI_WELCOMEPAGE_TEXT "可切换的 AI 拼音输入法。$\r$\n$\r$\n将安装到当前用户的应用目录，并添加开始菜单入口，主程序无需管理员权限；在应用内启用系统输入法时，需要单独的管理员授权。$\r$\n$\r$\n安装包包含本地推理运行文件；模型由你在应用内另行下载。升级前请从托盘退出 shadowinput。$\r$\n$\r$\n${VERSION} · 未签名开发预览版"
 !define MUI_FINISHPAGE_RUN "$INSTDIR\shadowinput.exe"

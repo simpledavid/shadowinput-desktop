@@ -1,5 +1,7 @@
 # shadowinput
 
+<img src="apps/desktop/ui/shared/shadowbrand/mark.svg" width="64" height="64" alt="shadowinput">
+
 **macOS と Windows** 向けのキーボード中心の AI ライティングツールです。Go + MyGo を使用し、[AstraFoundry/Arion](https://github.com/AstraFoundry/Arion) を基に開発しています。
 
 **実験的なシステム入力メソッド：** このブランチにはネイティブのピンイン入力と、明示的に有効化する独立 AI 候補行を追加しています。macOS は許可操作後もシステムでの有効化が未解決で、Windows TSF はクロスビルドのみ検証済みです。[操作手順、ビルド要件と検証状況](docs/project/shadowinput-ime.md)を参照してください。以下の preview.5 配布物には、この入力メソッドは含まれません。

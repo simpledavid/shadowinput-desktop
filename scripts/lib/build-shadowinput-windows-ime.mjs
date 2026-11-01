@@ -25,8 +25,12 @@ export function buildShadowWindowsIME({root,source,work,run}) {
  run(cxx,[...base,'-Wl,--no-insert-timestamp','-Wl,--image-base,0x180000000','-shared',path.join(native,'loader.cpp'),'-o',loader,'-lole32','-luuid','-ladvapi32','-lshell32']);
  const loaderHash=hash(loader),font=path.join(objects,'candidate-fonts.o');
  run(windres,['-I',desktopFonts(root).directory,'-i',path.join(native,'candidate_fonts.rc'),'-O','coff','-o',font]);
+ const brandResource=path.join(objects,'shadowinput-brand.o');
+ const brandRC=path.join(objects,'shadowinput-brand.rc');
+ writeFileSync(brandRC,'1 ICON "shadowinput.ico"\n');
+ run(windres,['-I',path.join(root,'apps/desktop/ui/shared/shadowbrand'),'-i',brandRC,'-O','coff','-o',brandResource]);
  for(const [input,filename,isDLL] of [['service.cpp','ArionTSF.dll',true],['control.cpp','arion-ime.exe',false]]){
-  run(cxx,[...base,`-DARION_KEYBOARD_MANIFEST_SHA256="${keyboardManifestSHA256}"`,`-DARION_TSF_LOADER_SHA256="${loaderHash}"`,...(isDLL?['-shared']:['-municode']),path.join(native,input),...(isDLL?[...cObjects,font]:[]),'-o',path.join(out,filename),'-lole32','-loleaut32','-luuid','-ladvapi32','-lshell32','-lgdi32',...(isDLL?['-ldwrite','-ld2d1','-lwinhttp']:[])]);
+  run(cxx,[...base,`-DARION_KEYBOARD_MANIFEST_SHA256="${keyboardManifestSHA256}"`,`-DARION_TSF_LOADER_SHA256="${loaderHash}"`,...(isDLL?['-shared']:['-municode']),path.join(native,input),brandResource,...(isDLL?[...cObjects,font]:[]),'-o',path.join(out,filename),'-lole32','-loleaut32','-luuid','-ladvapi32','-lshell32','-lgdi32',...(isDLL?['-ldwrite','-ld2d1','-lwinhttp']:[])]);
  }
  const files=Object.fromEntries(['ArionTSFLoader.dll','ArionTSF.dll','arion-ime.exe'].map(name=>[name,hash(path.join(out,name))]));
  verifyWindowsPEDependencies(Object.keys(files).map(n=>path.join(out,n)));
