@@ -17,17 +17,22 @@ import (
 	"arion.local/desktop/infrastructure/browser"
 	"arion.local/desktop/infrastructure/chatgptplan"
 	"arion.local/desktop/infrastructure/clipboardos"
+	"arion.local/desktop/infrastructure/inputcandidate"
 	"arion.local/desktop/infrastructure/llm/engine"
 	"arion.local/desktop/infrastructure/localwriting"
 	"arion.local/desktop/infrastructure/rewriting"
+	"arion.local/desktop/infrastructure/shadowime"
 	"arion.local/desktop/ui/pages/writing"
 	"arion.local/desktop/ui/shared/copy"
+	"arion.local/desktop/ui/shared/shadowbrand"
 	state "arion.local/desktop/ui/shared/writing"
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 )
 
 type app struct {
+	dispatch          func(func())
+	candidates        *inputcandidate.Server
 	s                 state.State
 	client            *chatgptplan.Client
 	win               *mygo.Window
@@ -37,7 +42,7 @@ type app struct {
 	job               uint64
 	cancel            context.CancelFunc
 	quitting          bool
-	local             *rewriting.Service
+	local             localRuntime
 	localDone         chan struct{}
 	localCancel       context.CancelFunc
 	localJob          uint64
@@ -55,6 +60,8 @@ func Run() error {
 		return err
 	}
 	a := &app{s: state.NewState(), directory: filepath.Join(base, state.Name)}
+	a.s.InputPage = true
+	a.s.Locale = copy.SimplifiedChinese
 	a.loadProfile()
 	a.loadPreferences()
 	mygo.App.WhenReady(func() { a.ready() })
@@ -65,23 +72,34 @@ func (a *app) ready() {
 	a.s.AccessRequired = needsAccess()
 	mygo.App.SetMenu(mygo.NewMenu([]*mygo.MenuItem{{Role: mygo.RoleAppMenu}, {Role: mygo.RoleEditMenu}}))
 	a.win = mygo.NewWindow(mygo.WindowOptions{Title: state.Name, Width: 820, Height: 820, MinWidth: 620, MinHeight: 640, Content: ui.View(writing.View(&a.s, a.actions()))})
+	_ = a.win.SetIcon(shadowbrand.AppPNG)
+	_ = mygo.App.Dock.SetIcon(shadowbrand.AppPNG)
 	a.win.OnClose(func(e *mygo.CloseEvent) {
 		if !a.quitting {
 			e.PreventDefault()
 			a.hide()
 		}
 	})
-	a.win.OnFocus(func() { a.s.AccessRequired = needsAccess(); a.invalidate() })
+	a.win.OnFocus(func() { a.s.AccessRequired = needsAccess(); a.s.IMEStatus = shadowime.Status(); a.invalidate() })
 	mygo.App.OnWindowAllClosed(func() {})
 	mygo.App.OnActivate(func(bool) { a.show() })
 	mygo.App.OnSecondInstance(func([]string, string) { a.show() })
-	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { a.quitting = true; a.stop(); a.releaseTarget(); a.closeLocal() })
+	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) {
+		a.quitting = true
+		a.stop()
+		a.releaseTarget()
+		a.closeLocal()
+		if a.candidates != nil {
+			a.candidates.Close()
+		}
+	})
 	mygo.App.OnWillQuit(func(*mygo.QuitEvent) { mygo.GlobalShortcut.UnregisterAll() })
 	if err := mygo.GlobalShortcut.Register(state.Shortcut, a.capture); err != nil {
 		a.s.Failure = copy.WriteShortcutError
 	}
 	a.installTray()
 	a.initLocal()
+	a.initInputMethod()
 	if a.s.Provider == state.ProviderChatGPT {
 		a.initAccount()
 	}
@@ -89,11 +107,11 @@ func (a *app) ready() {
 }
 
 func (a *app) actions() state.Actions {
-	return state.Actions{SignIn: a.signIn, Logout: a.logout, RefreshModels: a.models, Generate: a.generate, Cancel: a.stop,
+	return state.Actions{InstallIME: a.installInputMethod, ToggleCandidates: a.toggleCandidates, OpenInputSettings: func() { a.closePanel(); a.s.InputPage = true; a.s.Settings = false; a.show() }, SignIn: a.signIn, Logout: a.logout, RefreshModels: a.models, Generate: a.generate, Cancel: a.stop,
 		Import: a.importText, Copy: a.copyResult, Paste: a.pasteResult, Hide: a.hide, Changed: a.changed, Preferences: a.savePreferences,
 		RequestAccess:   requestAccess,
 		ProviderChanged: a.providerChanged, DownloadLocal: func() { a.startLocal(true, true) }, EnableLocal: func() { a.startLocal(false, true) }, DisableLocal: func() { a.startLocal(false, false) }, CancelLocal: func() { a.startLocal(false, false) },
-		EditSource: a.editSource, TaskChanged: a.taskChanged, StyleChanged: a.styleChanged, OpenEditor: a.openEditor, OpenStyles: a.openStyles, SaveStyle: a.saveStyle, NewStyle: a.newStyle, DeleteStyle: a.deleteStyle, SaveTerms: a.saveTerms, SetDefault: a.setDefault, RetryProfile: a.loadProfile, SwitchAccount: a.switchAccount,
+		EditSource: a.editSource, TaskChanged: a.taskChanged, StyleChanged: a.styleChanged, OpenEditor: a.openEditor, OpenStyles: a.openStyles, SaveStyle: a.saveStyle, NewStyle: a.newStyle, DeleteStyle: a.deleteStyle, SaveTerms: a.saveTerms, SetDefault: a.setDefault, RetryProfile: func() { a.loadProfile(); a.invalidate() }, SwitchAccount: a.switchAccount,
 		ManageUsage: func() { a.open("https://chatgpt.com/settings/usage") }, Source: func() { a.open("https://github.com/simpledavid/shadowinput-desktop") }}
 }
 
@@ -112,7 +130,7 @@ func (a *app) show() {
 	}
 }
 func (a *app) hide() {
-	if a.s.Local.Busy {
+	if a.s.Local.Busy && !a.s.AICandidates {
 		a.startLocal(false, false)
 	}
 	a.stop()
@@ -135,7 +153,12 @@ func (a *app) releaseTarget() {
 	}
 	a.s.HasTarget = false
 }
-func (a *app) changed() { a.s.InvalidateResult() }
+func (a *app) changed() {
+	a.s.InvalidateResult()
+	if a.candidates != nil {
+		a.candidates.Revoke()
+	}
+}
 
 func (a *app) stop() {
 	a.job++
@@ -166,7 +189,7 @@ func (a *app) start(timeout time.Duration) (context.Context, uint64) {
 
 // finish rejects late work from a canceled or replaced operation.
 func (a *app) finish(job uint64, err error, apply func()) {
-	mygo.RunOnMain(func() {
+	a.onMain(func() {
 		if a.quitting || job != a.job {
 			return
 		}
@@ -178,12 +201,7 @@ func (a *app) finish(job uint64, err error, apply func()) {
 		a.s.Notice = ""
 		if err != nil {
 			a.s.InvalidateResult()
-			a.s.Failure = failureKey(err)
-			if errors.Is(err, chatgptplan.ErrAuth) || errors.Is(err, chatgptplan.ErrPermission) {
-				a.s.Connected = false
-				a.s.Models = nil
-				a.s.Model = ""
-			}
+			a.setFailure(err)
 		} else if apply != nil {
 			apply()
 		}
@@ -341,9 +359,10 @@ func failureKey(err error) copy.Key {
 }
 
 type preferences struct {
-	Provider string
-	Locale   copy.Locale
-	Model    string
+	AICandidates bool
+	Provider     string
+	Locale       copy.Locale
+	Model        string
 }
 
 func (a *app) loadPreferences() {
@@ -360,6 +379,7 @@ func (a *app) loadPreferences() {
 		a.s.Failure = copy.WriteStoreError
 		return
 	}
+	a.s.AICandidates = p.AICandidates
 	a.s.Locale, a.s.Model = p.Locale, p.Model
 	a.s.Provider = p.Provider
 	if a.s.Provider == "" {
@@ -367,7 +387,7 @@ func (a *app) loadPreferences() {
 	} // Preserve the previous preview's account workflow.
 }
 func (a *app) savePreferences() {
-	b, err := json.Marshal(preferences{Provider: a.s.Provider, Locale: a.s.Locale, Model: a.s.Model})
+	b, err := json.Marshal(preferences{AICandidates: a.s.AICandidates, Provider: a.s.Provider, Locale: a.s.Locale, Model: a.s.Model})
 	if err == nil {
 		err = os.MkdirAll(a.directory, 0700)
 	}
@@ -376,5 +396,24 @@ func (a *app) savePreferences() {
 	}
 	if err != nil {
 		a.s.Failure = copy.WriteStoreError
+	}
+}
+
+// onMain keeps UI dispatch at the composition boundary; tests supply a deterministic loop.
+func (a *app) onMain(fn func()) {
+	if a.dispatch != nil {
+		a.dispatch(fn)
+		return
+	}
+	mygo.RunOnMain(fn)
+}
+
+// setFailure owns the account readiness transition for every inference entry point.
+func (a *app) setFailure(err error) {
+	a.s.Failure = failureKey(err)
+	if errors.Is(err, chatgptplan.ErrAuth) || errors.Is(err, chatgptplan.ErrPermission) {
+		a.s.Connected = false
+		a.s.Models, a.s.ModelNames = nil, nil
+		a.s.Model = ""
 	}
 }

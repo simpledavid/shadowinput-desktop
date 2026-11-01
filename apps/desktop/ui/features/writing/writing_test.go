@@ -82,7 +82,7 @@ func TestRiskReviewRequiresExplicitAcknowledgment(t *testing.T) {
 func TestWritingScreens(t *testing.T) {
 	for _, locale := range []copy.Locale{copy.English, copy.SimplifiedChinese} {
 		for _, dark := range []bool{false, true} {
-			for _, screen := range []string{"account", "compact", "review", "styles", "recovery", "local-off", "local-progress", "local-ready", "local-error", "local-compact"} {
+			for _, screen := range []string{"account", "compact", "review", "styles", "recovery", "local-off", "local-progress", "local-ready", "local-error", "local-compact", "input-ready", "input-off", "input-loading"} {
 				s := state.NewState()
 				s.Provider = state.ProviderChatGPT
 				s.Locale, s.ProfileReady = locale, true
@@ -134,10 +134,27 @@ func TestWritingScreens(t *testing.T) {
 						w, h = 560, 650
 					}
 				}
+				if strings.HasPrefix(screen, "input-") {
+					s.InputPage = true
+					s.AICandidates = true
+					s.Local = state.LocalStatus{Name: "Qwen3.5 2B · Q4_K_M", State: "ready", Installed: true}
+					s.IMEStatus = "shadowinput"
+					if screen == "input-off" {
+						s.AICandidates = false
+						s.Local = state.LocalStatus{State: "off", SizeBytes: 1280835840}
+					}
+					if screen == "input-loading" {
+						s.Local.State = "loading"
+						s.Local.Busy = true
+					}
+				}
 				tt := ui.NewTester(func(c *ui.Context) { c.DisableAnimations(); Editor(c, &s, state.Actions{}) }, w, h)
 				tt.SetDark(dark)
 				if !tt.HasText("shadowinput") {
 					t.Fatal("brand missing")
+				}
+				if strings.HasPrefix(screen, "input-") && !tt.HasText(copy.For(locale).Text(copy.ShadowAILocal)) {
+					t.Fatal("input settings fixture did not reach local setup")
 				}
 				if dir := os.Getenv("SHADOWINPUT_SCREENSHOTS"); dir != "" {
 					name := screen + "-" + string(locale) + "-light.png"
@@ -213,5 +230,24 @@ func TestLocalSetupAndGenerationActions(t *testing.T) {
 	}
 	if generated != 1 || stops != 1 {
 		t.Fatal("local ready actions disconnected")
+	}
+}
+
+func TestInputSettingsUsesLocalModelEvenWithChatGPTWriting(t *testing.T) {
+	s := state.NewState()
+	s.InputPage = true
+	s.Provider = state.ProviderChatGPT
+	s.ProfileReady = true
+	downloads := 0
+	a := state.Actions{DownloadLocal: func() { downloads++ }}
+	tt := ui.NewTester(func(c *ui.Context) { Editor(c, &s, a) }, 820, 820)
+	if tt.HasText("Sign in with ChatGPT") {
+		t.Fatal("automatic input settings require cloud login")
+	}
+	if err := tt.Click("Download & start"); err != nil {
+		t.Fatal(err)
+	}
+	if downloads != 1 {
+		t.Fatal("local setup not reachable from input settings")
 	}
 }

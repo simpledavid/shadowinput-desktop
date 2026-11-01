@@ -1,8 +1,15 @@
 # shadowinput
 
-面向 **macOS 和 Windows** 的键盘优先 AI 写作工具，使用 Go + MyGo，基于 [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion) 开发。
+<img src="apps/desktop/ui/shared/shadowbrand/mark.svg" width="64" height="64" alt="shadowinput">
+
+面向 **macOS 和 Windows** 的本地 AI 输入法，以及独立的 **Chrome** ChatGPT 翻译插件。桌面端使用 Go + MyGo，基于 [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion) 开发。
+
+**实验性系统输入法：**preview.6 包含原生拼音、默认拼音纠错，以及分词上屏后可主动开启的本地 AI 短语联想。macOS 已确认系统发现、启用和选中，完整编辑器 / AI 候选验收仍待完成；Windows TSF 仅完成交叉编译。详见[操作方式、构建前提和验收限制](docs/project/shadowinput-ime.md)及[官网下载](https://shadowinput.com/#download)。
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
+
+独立的 [shadowinput Chrome 插件](docs/project/shadowinput-extension.md)提供双语阅读、划词和输入框翻译。
+当前为 ZIP 实验预览版，登录与模型列表已有人工确认，完整翻译与真实网页兼容性仍待验证，不需要安装桌面端。
 
 - 本地 Qwen3.5-2B Q4_K_M：首次主动下载约 1.28 GB 模型，之后可离线启动，无需登录或 API Key。
 - 原生桌面编辑器，支持润色、翻译、改写和续写。
@@ -11,7 +18,7 @@
 - 本地风格卡、专有词表及操作默认值；数字、日期、词表和承诺的可疑变化需确认后才能应用。
 - 提供英文和简体中文界面，使用独立设置及凭据；shadowinput 入口无需麦克风或语音模型。
 
-**开发预览版：**本地测试、macOS arm64 构建和 Windows x64 交叉编译已通过。可[下载双端预览版 ZIP](docs/project/shadowinput.md#downloads)，尚无已签名安装包。真实 ChatGPT 登录与推理、Windows 原生运行以及跨应用粘贴仍需验收。选区、修改对比和个人风格已实现，仍需跨应用验收。变化提示仅作辅助，人名需加入词表。macOS 本地真实推理、上下文限制与取消重试已通过冒烟测试；Windows 本地推理仍待原生验收。行内补全及外部撤销尚未实现。
+**开发预览版：**本地测试、macOS arm64 构建和 Windows x64 交叉编译已通过。可[下载 DMG / EXE 安装包](docs/project/shadowinput.md#downloads)，尚无开发者签名或公证。macOS 桌面端已有单账号 ChatGPT 登录、会话恢复和一次完整改写的实测记录；Windows 原生运行及跨应用粘贴仍需验收。选区、修改对比和个人风格已实现，仍需跨应用验收。变化提示仅作辅助，人名需加入词表。macOS 本地真实推理、上下文限制与取消重试已通过冒烟测试；Windows 本地推理仍待原生验收。写作工具的行内补全及外部撤销尚未实现。
 
 ```sh
 node scripts/shadowinput.mjs check

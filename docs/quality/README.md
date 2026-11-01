@@ -4,6 +4,7 @@ This section defines testing strategy, code-review expectations, and quality gat
 
 ## Documents
 
+- [ub-mode coding rules](ub-mode.md) — default shadowinput engineering workflow and quality-tool evidence requirements.
 - [`testing.md`](testing.md) — testing strategy and test types.
 - [Native and product E2E](e2e.md) — real window lifecycle and future OS scenario driver.
 - [Windows validation](windows-validation.md) — executed native, installed speech, package and updater checks with release limits.

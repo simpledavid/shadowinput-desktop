@@ -17,6 +17,8 @@ const ProviderChatGPT = "chatgpt"
 const Shortcut = "CmdOrCtrl+Shift+J"
 
 type State struct {
+	InputPage, AICandidates, IMEInstalling                    bool
+	IMEStatus                                                 string
 	AccessRequired                                            bool
 	Provider                                                  string
 	Local                                                     LocalStatus
@@ -67,8 +69,13 @@ func (s *State) CanGenerate() bool {
 	return s.Provider == ProviderChatGPT && s.Connected && s.Model != ""
 }
 
+func (s *State) CanSuggest() bool {
+	return s.AICandidates && s.ProfileReady && !s.Busy && !s.Settings && s.Local.State == "ready" && !s.Local.Busy
+}
+
 // Actions are supplied by the composition root. Views never access credentials.
 type Actions struct {
+	InstallIME, ToggleCandidates, OpenInputSettings                                                                                         func()
 	ProviderChanged, DownloadLocal, EnableLocal, DisableLocal, CancelLocal                                                                  func()
 	RequestAccess                                                                                                                           func()
 	SignIn, Logout, RefreshModels, Generate, Cancel, Import, Copy, Paste, Hide, ManageUsage, Source, Changed, Preferences                   func()

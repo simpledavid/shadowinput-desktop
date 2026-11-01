@@ -1,5 +1,8 @@
 # Native desktop UI
 
+The [shadowinput browser extension](../project/shadowinput-extension.md) uses
+TypeScript and native browser DOM/CSS with the same downward FSD imports.
+
 Arion uses MyGo native Go packages under `apps/desktop/ui`. FSD responsibilities and downward imports remain; Go exported package symbols replace `index.ts`. Existing TypeScript/CSS examples below and in linked convention docs are illustrative, not a requirement to add a web frontend. See [repository mapping](../project/repository.md).
 
 The marketing site in `apps/site` is separate from the desktop app and is the only React code in the repository ([ADR 016](../decisions/016-marketing-site.md)); its conventions are in [`site.md`](site.md).

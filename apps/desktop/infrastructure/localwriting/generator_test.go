@@ -97,3 +97,19 @@ func TestInvalidAndCancelledRequestsNeverReachWorker(t *testing.T) {
 		}
 	}
 }
+
+func TestPhraseCompletionHasShortBudgetAndSuffixContract(t *testing.T) {
+	r := request()
+	r.Task = "complete_phrase"
+	r.Text = "麻烦帮我"
+	g := Generator{Chat: completeFunc(func(_ context.Context, p prompt.ChatRequest) (engine.Result, error) {
+		if p.MaxTokens > 64 || p.AllowThinking || p.Stream || !strings.Contains(p.Messages[0].Content, "only the missing suffix") {
+			t.Fatalf("not a fast suffix request: %+v", p)
+		}
+		return engine.Result{Text: "确认一下"}, nil
+	})}
+	text, err := g.Generate(context.Background(), r, nil)
+	if err != nil || text != "确认一下" {
+		t.Fatalf("%q %v", text, err)
+	}
+}

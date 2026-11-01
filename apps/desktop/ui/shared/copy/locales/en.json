@@ -812,5 +812,15 @@
   "WriteLocalInputBudget": "This request exceeds the local model’s context. Shorten the draft or instructions, or split the text.",
   "WriteLocalOutputBudget": "The local response was incomplete. Shorten the draft or ask for a shorter result, then retry.",
   "WriteLocalControlInput": "This text contains model control markers or invalid characters. Remove them before retrying.",
-  "WriteTimeoutError": "Generation timed out. Your draft is kept; shorten it and retry."
+  "WriteTimeoutError": "Generation timed out. Your draft is kept; shorten it and retry.",
+  "ShadowInputSettings": "Input method settings",
+  "ShadowInputSteps": "1. Install the input method. 2. Switch to shadowinput in the system input menu. 3. Type directly in your editor.",
+  "ShadowInstallIME": "Install / enable input method",
+  "ShadowCandidateKeys": "Space / numbers: commit words · Tab: append AI phrase · Esc: dismiss. Pinyin typo correction is enabled by default.",
+  "ShadowAICloud": "ChatGPT is available in the writing tool for explicit polishing and translation. Automatic phrases always use the local model.",
+  "ShadowAILocal": "Commit words normally, then pause briefly for a local AI phrase. Download and start the model once; it stays ready while AI is enabled. Your writing-tool model choice is separate.",
+  "ShadowAIEnable": "Enable automatic AI candidates",
+  "ShadowAIDisable": "Disable automatic AI candidates",
+  "ShadowAINote": "At least two committed characters are needed. Only recent words typed here, your style and relevant terms reach the local model. Context expires after 30 seconds; nothing is saved or sent to ChatGPT. Tab appends a suggestion without changing your words. Keep typing to dismiss it.",
+  "ShadowWritingTool": "Open long-form writing tool"
 }

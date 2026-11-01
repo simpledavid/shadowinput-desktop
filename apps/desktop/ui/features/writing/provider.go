@@ -19,7 +19,7 @@ func provider(c *ui.Context, s *state.State, a state.Actions, t theme.Tokens, m 
 			a.ProviderChanged()
 		}
 		ui.Spacer(c)
-		if s.AccessRequired {
+		if s.AccessRequired && !s.InputPage {
 			kit.Button(c.Key("access"), t, kit.Ghost, m.Text(copy.WriteAccess), !s.Busy).OnClick(a.RequestAccess)
 		}
 	})

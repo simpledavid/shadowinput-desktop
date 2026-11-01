@@ -36,9 +36,13 @@ func Prepare(r domain.WritingRequest) (prompt.ChatRequest, error) {
 			return prompt.ChatRequest{}, engine.ErrControlInput
 		}
 	}
+	budget := min(2048, max(512, utf8.RuneCountInString(r.Text)*2+256))
+	if r.Task == domain.TaskCompletePhrase {
+		budget = 64
+	}
 	return prompt.ChatRequest{
 		Messages: []prompt.Message{{Role: "system", Content: instructions}, {Role: "user", Content: r.Text}},
-		Seed:     42, MaxTokens: min(2048, max(512, utf8.RuneCountInString(r.Text)*2+256)),
+		Seed:     42, MaxTokens: budget,
 	}, nil
 }
 

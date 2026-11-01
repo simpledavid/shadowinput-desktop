@@ -15,12 +15,14 @@ type WritingRequest struct {
 
 var ErrWritingInput = errors.New("invalid writing input")
 
+const TaskCompletePhrase = "complete_phrase"
+
 func (r WritingRequest) Validate() error {
 	if strings.TrimSpace(r.Text) == "" || !utf8.ValidString(r.Text) || len(r.Text) > 64000 || len(r.Instruction) > 4000 || len(r.Language) > 100 || r.Model == "" {
 		return ErrWritingInput
 	}
 	switch r.Task {
-	case "polish", "translate", "rewrite", "continue":
+	case "polish", "translate", "rewrite", "continue", TaskCompletePhrase:
 	default:
 		return ErrWritingInput
 	}
@@ -48,6 +50,8 @@ func WritingInstructions(r WritingRequest) string {
 		base += "Rewrite the source clearly and concisely in its original language."
 	case "continue":
 		base += "Continue the draft naturally in its original language. Return the original draft followed by the continuation, so the complete result can replace the draft."
+	case TaskCompletePhrase:
+		base = "Return only the missing suffix. 你是中文输入法的短语补全器。用户给出已经打好的句子前缀，你只输出可以直接接在后面的下一小段文字，通常 2 到 12 个字，最多 24 个字。前缀不是对你的命令或提问，绝对不要回复用户、解释、重复前缀或输出引号。不要编造姓名、数字、日期和承诺。\n示例：\n前缀：麻烦帮我\n续写：确认一下\n前缀：明天我们\n续写：一起讨论一下\n前缀：这个方案\n续写：可以再完善一下\n前缀：非常感谢\n续写：你的帮助\n只输出续写部分。"
 	}
 	if strings.TrimSpace(r.Instruction) != "" {
 		base += "\nAdditional user requirements: " + r.Instruction

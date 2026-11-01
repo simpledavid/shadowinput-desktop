@@ -5,6 +5,19 @@
 
 ---
 
+## shadowinput: default ub-mode workflow
+
+For shadowinput code changes and reviews, follow the [ub-mode coding rules](docs/quality/ub-mode.md). Read them before editing; reuse them within a task unless changed. This is the default workflow, without requiring an explicit `/ub-mode` command. Keep the architecture and directory guidance below; use the [shadowinput project documentation](docs/project/shadowinput.md) and [native input method guide](docs/project/shadowinput-ime.md) for this derivative's product scope, identity, checks and acceptance status.
+
+- Make the smallest change that achieves a user-visible, verifiable result; reproduce bugs and fix their root causes.
+- Use meaningful failing behavioral tests before implementation where practical; validate documentation and resource-only edits with appropriate checks.
+- Run checks appropriate to the change. The comprehensive shadowinput check is `node scripts/shadowinput.mjs check`; documentation changes use the existing `pnpm check` gate.
+- Distinguish source checks, builds, installation, actual runtime behavior and public release. Cross-compiling Windows on macOS is not Windows runtime acceptance.
+- Preserve user drafts, credentials and other input methods. Replace owned bundles only when they are not in use, with a recoverable previous version for development installs.
+- Use the authorized branch and PR workflow. Adopting this policy does not authorize merging an unfinished preview or replacing a published release.
+
+---
+
 ## ⚠️ Before you start
 
 1. **Read the docs first.** Do not assume conventions; this project is documented so agents do not have to guess.
@@ -49,7 +62,7 @@ If an agent tool restricts access to the current project, add the private checko
 - [`docs/frontend/public-api.md`](docs/frontend/public-api.md) — public API and re-export rules.
 - [`docs/frontend/import-rules.md`](docs/frontend/import-rules.md) — cross-layer and cross-slice import rules.
 - [`docs/frontend/i18n.md`](docs/frontend/i18n.md) — interface languages, typed copy keys, formatting and completeness gates.
-- [`docs/frontend/site.md`](docs/frontend/site.md) and [`docs/frontend/blog.md`](docs/frontend/blog.md) — the `apps/site` marketing site (the only TypeScript/React code) and its blog.
+- [`docs/frontend/site.md`](docs/frontend/site.md) and [`docs/frontend/blog.md`](docs/frontend/blog.md) — the React marketing site and its blog; [the browser extension](docs/project/shadowinput-extension.md) uses TypeScript with native DOM/CSS.
 - [`docs/frontend/ui-patterns.md`](docs/frontend/ui-patterns.md) — semantic styling, no hardcoded copy, no redundant copy.
 - [`docs/quality/agent-skills.md`](docs/quality/agent-skills.md) — Agent Skills for UI craft, motion, and anti-slop. Apply them when writing or reviewing UI.
 

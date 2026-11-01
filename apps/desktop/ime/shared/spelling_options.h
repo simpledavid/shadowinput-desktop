@@ -3,6 +3,12 @@
 #include <rime_api.h>
 #include <stdint.h>
 
+#ifdef SHADOWINPUT_IME
+#define ARION_DEFAULT_TYPO_CORRECTION 1
+#else
+#define ARION_DEFAULT_TYPO_CORRECTION 0
+#endif
+
 enum { ARION_FUZZY_COUNT = 11, ARION_FUZZY_MASK = (1u << ARION_FUZZY_COUNT) - 1 };
 static const char *const arion_fuzzy_options[ARION_FUZZY_COUNT] = {
     "arion_fuzzy_z_zh", "arion_fuzzy_c_ch", "arion_fuzzy_s_sh",

@@ -812,5 +812,15 @@
   "WriteLocalInputBudget": "内容超出本地模型的上下文容量。请缩短原文、附加要求或分段处理。",
   "WriteLocalOutputBudget": "本地模型未完整生成结果。请缩短原文或要求更简短的结果后重试。",
   "WriteLocalControlInput": "文本含模型控制标记或无效字符，请移除后重试。",
-  "WriteTimeoutError": "生成超时，原文已保留。请缩短内容后重试。"
+  "WriteTimeoutError": "生成超时，原文已保留。请缩短内容后重试。",
+  "ShadowInputSettings": "输入法设置",
+  "ShadowInputSteps": "1. 安装输入法　2. 在系统输入菜单切换到 shadowinput　3. 在微信、文档等输入框直接打字。",
+  "ShadowInstallIME": "安装 / 启用输入法",
+  "ShadowCandidateKeys": "空格 / 数字：选词上屏　Tab：追加 AI 短语　Esc：取消。默认开启拼音纠错。",
+  "ShadowAICloud": "ChatGPT 可在写作工具里用于主动润色、翻译。自动短语联想始终使用本地模型。",
+  "ShadowAILocal": "正常按空格上屏，稍停一下，本地 AI 接着联想。首次下载并启动模型后，开启 AI 时会保持就绪。写作工具中的模型选择互不影响。",
+  "ShadowAIEnable": "开启自动 AI 候选",
+  "ShadowAIDisable": "关闭自动 AI 候选",
+  "ShadowAINote": "至少上屏 2 个字后开始联想。仅使用当前输入位置最近的词语、风格及相关词表；30 秒后清空上下文，不保存、不发给 ChatGPT。Tab 只追加建议，不改动已输入的文字；继续打字即可忽略。",
+  "ShadowWritingTool": "打开长文写作工具"
 }

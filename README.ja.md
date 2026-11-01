@@ -1,8 +1,15 @@
 # shadowinput
 
-**macOS と Windows** 向けのキーボード中心の AI ライティングツールです。Go + MyGo を使用し、[AstraFoundry/Arion](https://github.com/AstraFoundry/Arion) を基に開発しています。
+<img src="apps/desktop/ui/shared/shadowbrand/mark.svg" width="64" height="64" alt="shadowinput">
+
+**macOS と Windows** 向けのローカル AI 入力メソッドと、**Chrome** 向けの独立した ChatGPT 翻訳拡張機能です。デスクトップ版は Go + MyGo を使用し、[AstraFoundry/Arion](https://github.com/AstraFoundry/Arion) を基に開発しています。
+
+**実験的なシステム入力メソッド：** preview.6 にはネイティブのピンイン入力、標準のタイプミス補正と、単語確定後に明示的に有効化するローカル AI フレーズ候補が含まれます。macOS ではシステムへの表示・有効化・選択を確認済みですが、エディタ内の AI 候補の一連の動作は未検証です。Windows TSF はクロスビルドのみ検証済みです。[操作手順、ビルド要件と検証状況](docs/project/shadowinput-ime.md)と[ダウンロード](https://shadowinput.com/#download)を参照してください。
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
+
+独立した [shadowinput Chrome 拡張機能](docs/project/shadowinput-extension.md)は対訳表示、選択文と入力欄の翻訳を提供します。
+ZIP 実験プレビューです。ログインとモデル一覧はユーザーが確認済みですが、翻訳の完了と実際のウェブページとの互換性は未検証です。デスクトップアプリは不要です。
 
 - ローカル Qwen3.5-2B Q4_K_M：初回に約 1.28 GB を明示的にダウンロードした後、ログインや API キーなしでオフライン起動できます。
 - ネイティブのデスクトップエディターで推敲、翻訳、書き換え、続きを生成します。
@@ -11,7 +18,7 @@
 - ローカルのスタイル、用語集、操作別の既定値を編集できます。数字・日付・用語・約束の変化が検出された場合は、確認後に適用します。
 - UI は英語と簡体字中国語に対応。設定と認証情報は独立しており、shadowinput の起動にはマイクや音声モデルの準備は不要です。
 
-**開発プレビュー：**ローカルテスト、macOS arm64 ビルド、Windows x64 クロスビルドは成功しています。[両プラットフォームのプレビュー ZIP](docs/project/shadowinput.md#downloads) をダウンロードできます。署名済みインストーラーはありません。実際の ChatGPT 認証と推論、Windows 上での動作、外部エディターへの貼り付けは引き続き検証が必要です。選択範囲の取得、変更比較、個人スタイルは実装済みですが、外部エディターでの検証が必要です。変更検出は補助的で、人名は用語集への登録が必要です。macOS の実際のローカル推論、コンテキスト制限、キャンセル後の再生成はスモークテスト済みです。Windows のローカル推論は実機検証が必要です。インライン補完と外部編集の取り消しは未実装です。
+**開発プレビュー：**ローカルテスト、macOS arm64 ビルド、Windows x64 クロスビルドは成功しています。[DMG / EXE インストーラー](docs/project/shadowinput.md#downloads) をダウンロードできます。開発者署名や公証はありません。macOS デスクトップ版では単一アカウントで ChatGPT ログイン、セッション復元と一度の書き換え完了を確認済みです。Windows 上での動作と外部エディターへの貼り付けは引き続き検証が必要です。選択範囲の取得、変更比較、個人スタイルは実装済みですが、外部エディターでの検証が必要です。変更検出は補助的で、人名は用語集への登録が必要です。macOS の実際のローカル推論、コンテキスト制限、キャンセル後の再生成はスモークテスト済みです。Windows のローカル推論は実機検証が必要です。ライティングツールのインライン補完と外部編集の取り消しは未実装です。
 
 ```sh
 node scripts/shadowinput.mjs check

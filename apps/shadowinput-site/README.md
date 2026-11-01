@@ -2,7 +2,12 @@
 
 The buildless website for [shadowinput.com](https://shadowinput.com/). Serve `public/` directly. This directory is separate from the upstream Arion website in `apps/site/`.
 
-The interactive examples use preset text. They do not call a model. Desktop downloads link directly to the `v0.1.0-preview.5` macOS DMG and Windows EXE installer. Portable ZIPs, corresponding source and checksums remain on the release page.
+The interactive examples use preset text. They do not call a model. Downloads
+link directly to the input-method preview DMG/EXE and standalone browser ZIP.
+The HTML download rows own versions and URLs; each release includes corresponding
+source and checksums. Input-method runtime limits and the extension's verified
+sign-in/model discovery versus pending translation/browser acceptance are visible before download. See the
+[extension verification ledger](../../docs/project/shadowinput-extension.md).
 
 ## Cloudflare deployment
 

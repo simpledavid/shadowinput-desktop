@@ -66,7 +66,9 @@ class LanguageBar final : public ITfLangBarItemButton,public ITfSource {
             items.push_back({static_cast<UINT>(action),enabled?0u:TF_LBMENUF_GRAYED,std::move(text)});
         };
         auto separator=[&]() { items.push_back({0,TF_LBMENUF_SEPARATOR,{}}); };
+#ifndef SHADOWINPUT_IME
         item(KeyboardMenuAction::Voice,nativeVoiceTitle(current.dictationKey),current.voice);
+#endif
         separator();
         if (!current.failure.empty()) { items.push_back({0,TF_LBMENUF_GRAYED,current.failure}); separator(); }
         item(KeyboardMenuAction::Language,nativeCopy(current.available?(current.ascii?NativeCopy::SwitchChinese:NativeCopy::SwitchEnglish):NativeCopy::Unavailable),current.available);
@@ -137,6 +139,13 @@ public:
         if (!value) return E_POINTER;
         *value=nullptr;
         const int width=GetSystemMetrics(SM_CXSMICON),height=GetSystemMetrics(SM_CYSMICON);
+#ifdef SHADOWINPUT_IME
+        HMODULE imageModule=nullptr;
+        if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            reinterpret_cast<LPCWSTR>(ArionName),&imageModule)) return E_FAIL;
+        *value=static_cast<HICON>(LoadImageW(imageModule,MAKEINTRESOURCEW(1),IMAGE_ICON,width,height,LR_DEFAULTCOLOR));
+        return *value?S_OK:E_FAIL;
+#else
         HDC screen=GetDC(nullptr);
         if (!screen) return E_FAIL;
         HDC dc=CreateCompatibleDC(screen),maskDC=CreateCompatibleDC(screen);
@@ -166,6 +175,7 @@ public:
         if (color) DeleteObject(color);
         ReleaseDC(nullptr,screen);
         return hr;
+#endif
     }
     HRESULT STDMETHODCALLTYPE OnClick(TfLBIClick click,POINT point,const RECT*) override {
         if (!state || !command) return E_FAIL;

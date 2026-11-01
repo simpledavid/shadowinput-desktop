@@ -26,3 +26,5 @@ Jev-style local candidate ranking is explicitly requested. [Research](../docs/re
 Each acceptance scenario has a stable ID. New tests and task handoffs cite these IDs. An unchecked task is not an implemented feature. Changes to privacy defaults, input ownership or wire compatibility require an ADR and updated acceptance criteria.
 
 - [011 Keyboard-first writing](011-writing.md) — shadowinput derivative requirements.
+- [012 Local input phrases](012-native-phrases.md) — shadowinput native continuation and cancellation requirements.
+- [013 Browser translation](013-browser-translation.md) — standalone Chrome preview and feature coverage.
