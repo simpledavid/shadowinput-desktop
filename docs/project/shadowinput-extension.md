@@ -51,6 +51,11 @@ credentials; it does not revoke the provider-side grant.
 - Completed real translation, browser restart/token rotation/logout and live-page
   compatibility remain unverified.
   Desktop OAuth acceptance does not validate the extension.
+- Pre-merge review reproduced and fixed three regressions: an old model request
+  could clear a newer login, the popup enabled page actions on unsupported pages,
+  and closing the text workbench left its translation running. Worker and DOM
+  regression tests now check session ownership, disabled actions with guidance,
+  and cancellation when the owning tab closes. These are synthetic checks.
 - Crapper, Dryer and Mutator are not installed/integrated and were not run.
   No CRAP, duplication or mutation score is claimed.
 

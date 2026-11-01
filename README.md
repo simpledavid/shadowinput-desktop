@@ -2,15 +2,15 @@
 
 <img src="apps/desktop/ui/shared/shadowbrand/mark.svg" width="64" height="64" alt="shadowinput">
 
-Keyboard-first AI writing for **macOS and Windows**, built with Go + MyGo and based on [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion).
+Local AI input for **macOS and Windows**, plus a standalone ChatGPT translation extension for **Chrome**. The desktop app uses Go + MyGo and is based on [AstraFoundry/Arion](https://github.com/AstraFoundry/Arion).
 
-**Experimental system input method:** this branch adds native Pinyin with default typo correction and opt-in local AI phrases after word commits. macOS discovery, enablement and selection are confirmed; full editor/AI candidate acceptance remains pending. Windows TSF has only been cross-built. See [workflow, build prerequisites and current acceptance limits](docs/project/shadowinput-ime.md). The existing preview.5 downloads below do not contain this input method.
+**Experimental system input method:** preview.6 includes native Pinyin with default typo correction and opt-in local AI phrases after word commits. macOS discovery, enablement and selection are confirmed; full editor/AI candidate acceptance remains pending. Windows TSF has only been cross-built. See [workflow, build prerequisites and current acceptance limits](docs/project/shadowinput-ime.md) and [downloads](https://shadowinput.com/#download).
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
 The independent [shadowinput Chrome extension](docs/project/shadowinput-extension.md)
 adds bilingual reading and selection/input translation. It is an experimental ZIP;
-real browser authorization and inference remain unverified. No desktop companion is required.
+sign-in and model discovery have manual evidence, while completed translation and live-page compatibility remain unverified. No desktop companion is required.
 
 - Offline Qwen3.5-2B Q4_K_M writing: explicitly download about 1.28 GB once, then start locally without login or an API key.
 - Polish, translate, rewrite and continue a draft with a native desktop editor.
@@ -19,7 +19,7 @@ real browser authorization and inference remain unverified. No desktop companion
 - Local style cards, glossary and per-task defaults; advisory number/date/term/commitment checks require acknowledgment when flagged.
 - English and Simplified Chinese UI; separate app settings and credentials; no microphone or speech-model setup in the shadowinput entry point.
 
-**Development preview:** local tests, a macOS arm64 build and a Windows x64 cross-build pass. [Download preview DMG / EXE installers](docs/project/shadowinput.md#downloads) for both platforms; signed installers are not available. ChatGPT sign-in, session restoration and one completed real rewrite have passed on macOS with one account. Native Windows behavior and external-editor delivery still require acceptance testing. Selection, diff and style features are implemented but still need native editor acceptance. Review checks are advisory and protect names only when listed in the glossary. Real macOS local inference, context limits and cancel/retry passed smoke tests. Windows local inference still needs native acceptance. Inline prediction and external undo are not implemented.
+**Development preview:** local tests, a macOS arm64 build and a Windows x64 cross-build pass. [Download preview DMG / EXE installers](docs/project/shadowinput.md#downloads) for both platforms; signed installers are not available. ChatGPT sign-in, session restoration and one completed real rewrite have passed on macOS with one account. Native Windows behavior and external-editor delivery still require acceptance testing. Selection, diff and style features are implemented but still need native editor acceptance. Review checks are advisory and protect names only when listed in the glossary. Real macOS local inference, context limits and cancel/retry passed smoke tests. Windows local inference still needs native acceptance. Writing-tool inline prediction and external undo are not implemented.
 
 ```sh
 node scripts/shadowinput.mjs check

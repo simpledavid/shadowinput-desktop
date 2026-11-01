@@ -5,8 +5,8 @@ The buildless website for [shadowinput.com](https://shadowinput.com/). Serve `pu
 The interactive examples use preset text. They do not call a model. Downloads
 link directly to the input-method preview DMG/EXE and standalone browser ZIP.
 The HTML download rows own versions and URLs; each release includes corresponding
-source and checksums. Input-method runtime limits and the extension's unverified
-real authorization/browser flow are visible before download. See the
+source and checksums. Input-method runtime limits and the extension's verified
+sign-in/model discovery versus pending translation/browser acceptance are visible before download. See the
 [extension verification ledger](../../docs/project/shadowinput-extension.md).
 
 ## Cloudflare deployment
