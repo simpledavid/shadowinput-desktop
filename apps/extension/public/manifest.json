@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "shadowinput",
   "version": "0.1.0",
-  "version_name": "0.1.0-preview.1",
+  "version_name": "0.1.0-preview.2",
   "description": "__MSG_description__",
   "default_locale": "en",
   "minimum_chrome_version": "120",

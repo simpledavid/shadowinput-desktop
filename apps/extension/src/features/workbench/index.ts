@@ -3,6 +3,7 @@ import {errorCode} from '../../shared/errors.js';
 import {request} from '../../shared/rpc.js';
 import {object,requiredString} from '../../shared/validation.js';
 import {settings} from '../../shared/settings.js';
+import {diagnosticOf,diagnosticText} from '../../shared/diagnostics.js';
 
 function element<T extends HTMLElement>(id: string, constructor: {new(): T}): T {
   const found = document.getElementById(id);
@@ -55,7 +56,10 @@ export function mountWorkbench(): void {
   }
   async function run(action:()=>Promise<void>): Promise<void> {
     error.textContent = '';
-    try {await action();} catch (reason) {error.textContent=t.errors[errorCode(reason)];}
+    try {await action();} catch (reason) {showError(reason);}
+  }
+  function showError(reason:unknown):void {
+    error.textContent=t.errors[errorCode(reason)]+diagnosticText(diagnosticOf(reason),t.stages);
   }
   async function loadModels(): Promise<void> {
     if (loadingModels) return;
@@ -85,7 +89,7 @@ export function mountWorkbench(): void {
       connected ? (typeof data.email === 'string' && data.email ? data.email : t.connected) : t.signedOut;
     if (typeof data.notice === 'string' && lastNotice !== data.notice) {
       lastNotice=data.notice;
-      if (data.notice in t.errors) error.textContent=t.errors[errorCode(new Error(data.notice))];
+      if (data.notice in t.errors) error.textContent=t.errors[errorCode(new Error(data.notice))]+diagnosticText(data.diagnostic,t.stages);
     }
     updateButtons();
     if (newlyConnected) await loadModels();
@@ -116,6 +120,6 @@ export function mountWorkbench(): void {
     language.value=config.locale;target.value=config.target;savedModel=config.model;applyCopy();
     await refresh();
   });
-  const timer=setInterval(()=>void refresh().catch(reason=>{error.textContent=t.errors[errorCode(reason)];}),2000);
+  const timer=setInterval(()=>void refresh().catch(showError),2000);
   window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
 }

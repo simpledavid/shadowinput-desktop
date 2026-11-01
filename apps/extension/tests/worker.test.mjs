@@ -12,6 +12,7 @@ const area=data=>({
   async remove(key){delete data[key];},
 });
 const navigations=[];
+globalThis.fetch=async()=>{throw new TypeError('private-transport-canary');};
 globalThis.chrome={
   storage:{local:area(local),session:area(session)},
   runtime:{id:'test-extension',getURL:path=>'chrome-extension://test-extension/'+path,onMessage:event('message'),onInstalled:event('installed')},
@@ -47,4 +48,20 @@ test('only the owned top-level authorization tab can consume the pending callbac
   assert.deepEqual(navigations,[{id:42,options:{url:'chrome-extension://test-extension/panel.html'}}]);
   events.navigate({tabId:42,frameId:0,url});await tick();
   assert.equal(navigations.length,1,'a consumed callback cannot be replayed');
+});
+
+test('a failed callback exposes only safe stage diagnostics to the workbench',async()=>{
+  const record={hostID:'urn:uuid:00000000-0000-4000-8000-000000000002'};
+  local.account=record;
+  const attempt=await begin(record);
+  session.pending={tabID:43,attempt};
+  const url=attempt.redirect+'?'+new URLSearchParams({state:attempt.state,code:'private-code-canary',client_id:'oaiapp_test'});
+  events.navigate({tabId:43,frameId:0,url});
+  await tick();await tick();await tick();
+  const sender={id:'test-extension',url:'chrome-extension://test-extension/panel.html'};
+  const reply=await new Promise(resolve=>events.message({type:'status'},sender,resolve));
+  assert.equal(reply.ok,true);
+  assert.equal(reply.data.connected,false);
+  assert.deepEqual(reply.data.diagnostic,{stage:'token_exchange',code:'network_error',kind:'transport'});
+  assert.doesNotMatch(JSON.stringify(reply),/private-|verifier|access_token/);
 });

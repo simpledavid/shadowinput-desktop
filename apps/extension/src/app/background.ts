@@ -2,6 +2,7 @@ import {Account} from '../features/connect/index.js';
 import {Jobs,models,translate} from '../features/translate/index.js';
 import {provider} from '../shared/config.js';
 import {errorCode} from '../shared/errors.js';
+import {diagnosticOf,parseDiagnostic,type Diagnostic} from '../shared/diagnostics.js';
 import {object,requiredString} from '../shared/validation.js';
 import {store,ready} from './store.js';
 import {pending} from './pending.js';
@@ -19,8 +20,8 @@ function ordered<T>(action:()=>Promise<T>):Promise<T> {
   return result;
 }
 
-async function notice(value: string): Promise<void> {
-  await chrome.storage.session.set({notice:value});
+async function notice(value: string,diagnostic?:Diagnostic): Promise<void> {
+  await chrome.storage.session.set({notice:value,diagnostic:diagnostic ?? null});
 }
 
 async function start(): Promise<void> {
@@ -29,7 +30,7 @@ async function start(): Promise<void> {
   const attempt = await account.start();
   const tab = await chrome.tabs.create({url:'about:blank',active:true});
   if (tab.id === undefined) throw new Error('network_error');
-  await chrome.storage.session.set({pending:{attempt,tabID:tab.id},notice:'waiting'});
+  await chrome.storage.session.set({pending:{attempt,tabID:tab.id},notice:'waiting',diagnostic:null});
   await chrome.tabs.update(tab.id,{url:attempt.authorizationURL});
 }
 
@@ -48,7 +49,7 @@ async function finish(tabID: number, url: string): Promise<void> {
     await account.finish(attempt,url);
     await notice('connected');
   } catch (error) {
-    await notice(errorCode(error));
+    await notice(errorCode(error),diagnosticOf(error));
   }
 }
 
@@ -66,15 +67,16 @@ async function dispatch(raw: unknown, sender: chrome.runtime.MessageSender): Pro
   await ready;
   switch (message.type) {
     case 'status': {
-      const saved = await chrome.storage.session.get(['pending','notice']);
+      const saved = await chrome.storage.session.get(['pending','notice','diagnostic']);
       const active = pending(saved.pending);
       if (active && active.attempt.expiresAt <= Date.now()) {
         await chrome.storage.session.remove('pending');
         await notice('auth_expired');
         saved.notice = 'auth_expired';
+        delete saved.diagnostic;
         delete saved.pending;
       }
-      return {...await account.status(),notice:saved.notice ?? 'idle',pending:!!saved.pending};
+      return {...await account.status(),notice:saved.notice ?? 'idle',pending:!!saved.pending,diagnostic:parseDiagnostic(saved.diagnostic)};
     }
     case 'connect': return ordered(start);
     case 'cancelSignIn': return ordered(cancelSignIn);
@@ -132,7 +134,7 @@ chrome.runtime.onMessage.addListener((message:unknown,sender,respond)=>{
     if(code==='sign_in_required') {
       try{await account.logout();}catch(storageError){code=errorCode(storageError);}
     }
-    respond({ok:false,error:code});
+    respond({ok:false,error:code,diagnostic:diagnosticOf(error)});
   });
   return true;
 });

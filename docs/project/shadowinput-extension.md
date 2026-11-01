@@ -30,10 +30,16 @@ credentials; it does not revoke the provider-side grant.
 - Strict TypeScript compilation, synthetic signed-token/transport tests, DOM
   reading/replacement tests, worker sender/callback ownership and ZIP build ran.
   Test output owns the current count; fixtures are not real inference evidence.
-- Chrome installation/UI were not verified: the browser tool explicitly blocked
-  chrome://extensions. The user received the built folder and redirected work
-  to website downloads instead of completing the manual installation test.
-- Experimental callback reception, real account login/model listing/inference,
+- The user loaded the unpacked extension and reported a connection error after
+  completing OpenAI authorization and returning to the account page. This is a
+  failed real acceptance attempt, not successful sign-in. The browser tool blocks
+  both chrome://extensions and extension pages, so their UI requires user checks.
+- Safe diagnostics identify token exchange, identity keys/verification, model
+  discovery and translation separately. Only allowlisted stage/code/kind and an
+  optional HTTP status cross the worker boundary. Callback failure metadata lives
+  in session storage and clears with a new sign-in, successful sign-in or logout.
+  Raw errors, URLs, response bodies, credentials and text are excluded.
+- Successful experimental callback reception, real account login/model listing/inference,
   browser restart/refresh/logout and live-page compatibility remain unverified.
   Desktop OAuth acceptance does not validate the extension.
 - Crapper, Dryer and Mutator are not installed/integrated and were not run.

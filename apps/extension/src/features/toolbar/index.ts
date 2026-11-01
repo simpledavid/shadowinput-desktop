@@ -4,6 +4,7 @@ import {request} from '../../shared/rpc.js';
 import {errorCode} from '../../shared/errors.js';
 import {settings} from '../../shared/settings.js';
 import {object,requiredString} from '../../shared/validation.js';
+import {diagnosticOf,diagnosticText} from '../../shared/diagnostics.js';
 
 export async function mountToolbar():Promise<void> {
   const config=settings(await request('settings'));
@@ -22,7 +23,7 @@ export async function mountToolbar():Promise<void> {
   target.value=config.target;
   async function run(action:()=>Promise<void>) {
     status!.textContent='';
-    try{await action();}catch(error){status!.textContent=t.errors[errorCode(error)];}
+    try{await action();}catch(error){status!.textContent=t.errors[errorCode(error)]+diagnosticText(diagnosticOf(error),t.stages);}
   }
   const account=object(await request('status'));
   const login=document.querySelector('#connect');

@@ -4,6 +4,8 @@ import { object, requiredString } from '../../shared/validation.js';
 import { begin, callback } from './oauth.js';
 import { verifyIdentity } from './identity.js';
 import type { Attempt, Registration } from './index.js';
+import {atStage} from '../../shared/diagnostics.js';
+import {HttpError} from '../../shared/errors.js';
 
 export type Session = {email: string; access: string; refresh: string; scope: string; expiresAt: number};
 export type AccountRecord = Registration & {session?: Session};
@@ -48,15 +50,17 @@ export class Account {
   }
 
   private async exchange(form: Record<string, string>): Promise<Record<string, unknown>> {
+    return atStage('token_exchange',async()=>{
     const response = await this.fetcher(provider.token, {...networkOptions(), method:'POST',
       headers:{'Content-Type':'application/x-www-form-urlencoded'},
       body:new URLSearchParams({...form,resource:provider.api}).toString()});
     if (response.status === 400) {
       const error = await json(response);
-      if (error.error === 'invalid_grant') throw new Error('sign_in_required');
-      throw new Error('request_rejected');
+      if (error.error === 'invalid_grant') throw new HttpError('sign_in_required',400);
+      throw new HttpError('request_rejected',400);
     }
     return json(await checked(response));
+    });
   }
 
   status(): Promise<{email: string; connected: boolean}> {
@@ -78,8 +82,8 @@ export class Account {
       const registered = {...record, clientID};
       await this.store.save(registered);
       const raw = await this.exchange({grant_type:'authorization_code',client_id:clientID,code,code_verifier:attempt.verifier,redirect_uri:attempt.redirect});
-      const keys = await json(await checked(await this.fetcher(provider.jwks, networkOptions())));
-      const identity = await verifyIdentity(requiredString(raw.id_token), keys, attempt, clientID);
+      const keys = await atStage('identity_keys',async()=>json(await checked(await this.fetcher(provider.jwks, networkOptions()))));
+      const identity = await atStage('identity_verify',()=>verifyIdentity(requiredString(raw.id_token), keys, attempt, clientID));
       const session = {...tokens(raw),email:identity.email};
       requirePlan(session);
       await this.store.save({...registered,subject:identity.subject,session});

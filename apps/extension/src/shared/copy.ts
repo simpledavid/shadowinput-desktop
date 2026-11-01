@@ -1,4 +1,5 @@
 import type {ErrorCode} from './errors.js';
+import type {Stage} from './diagnostics.js';
 export const copy = {
   zh: {
     title:'读懂另一种语言。', subtitle:'用自己的 ChatGPT，翻译你眼前的文字。', preview:'浏览器验证版',
@@ -12,12 +13,13 @@ export const copy = {
     experimental:'此版本用于验证独立插件授权。只有登录并完成真实翻译后，才能确认你的账号可用。',
     signedOut:'连接后开始翻译', local:'登录凭据保存在当前 Chrome 配置中，不同步到云端。',
     sourceLink:'开源代码', license:'基于 Arion · AGPL-3.0', languages:['简体中文','英语','日语'],
+    stages:{token_exchange:'授权码兑换',identity_keys:'获取身份公钥',identity_verify:'身份校验',models:'获取模型',translation:'翻译请求'} satisfies Record<Stage,string>,
     errors:{
       sign_in_required:'请重新登录 ChatGPT，然后重试。',
       plan_permission:'尚未取得 ChatGPT 套餐调用权限，请重新授权并检查账号资格。',
       usage_limit:'已达到当前用量限制，请稍后重试或在 ChatGPT 查看套餐。',
       request_rejected:'OpenAI 拒绝了请求格式或注册信息。请保留此提示以便排查。',
-      network_error:'连接未完成，请检查网络后重试。',
+      network_error:'连接未完成。请保留诊断信息以便排查。',
       invalid_response:'服务返回了无法识别的数据，请稍后重试。',
       storage_failed:'无法保存登录状态，请检查浏览器存储。',
       invalid_callback:'授权回调不匹配，请重新发起登录。',
@@ -45,11 +47,12 @@ export const copy = {
     experimental:'This preview validates standalone extension authorization. Account compatibility requires successful sign-in and a real translation.',
     signedOut:'Connect to start translating',local:'Credentials stay in this Chrome profile and are not cloud-synced.',
     sourceLink:'Source code',license:'Based on Arion · AGPL-3.0',languages:['Simplified Chinese','English','Japanese'],
+    stages:{token_exchange:'Token exchange',identity_keys:'Identity keys',identity_verify:'Identity verification',models:'Model discovery',translation:'Translation request'} satisfies Record<Stage,string>,
     errors:{
       sign_in_required:'Sign in to ChatGPT again, then retry.',plan_permission:'ChatGPT plan permission is missing. Reauthorize and check account eligibility.',
       usage_limit:'Usage limit reached. Retry later or check your plan in ChatGPT.',
       request_rejected:'OpenAI rejected the request or registration. Keep this message for troubleshooting.',
-      network_error:'Connection failed. Check your network and retry.',invalid_response:'The service returned unrecognized data. Retry later.',
+      network_error:'Connection failed. Keep the diagnostic details for troubleshooting.',invalid_response:'The service returned unrecognized data. Retry later.',
       storage_failed:'Unable to save your sign-in. Check browser storage.',invalid_callback:'Authorization callback did not match. Start sign-in again.',
       authorization_denied:'Authorization was declined. You can sign in again.',auth_expired:'Sign-in timed out. Start again.',
       invalid_identity:'Identity verification failed. Sign in again.',account_mismatch:'This account differs from the saved registration. Sign in with the original account.',

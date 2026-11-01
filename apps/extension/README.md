@@ -26,6 +26,11 @@ restricted to trusted extension contexts. Local storage persists credentials
 across restarts but is **not OS-keychain encryption**. Content scripts receive
 only translation results and non-secret preferences.
 
+Connection errors show a fixed step, failure category and optional HTTP status.
+These diagnostics exclude raw exceptions, URLs, response bodies, credentials and
+translated content. The latest callback error is held only in session storage and
+clears when sign-in starts/completes or the user signs out.
+
 The [OpenAI OSS flow](https://developers.openai.com/siwc/token-sharing-open-source/sign-in)
 documents an HTTP loopback listener. This experiment receives that callback via
 the created authorization tab's top-level navigation event. It validates state,

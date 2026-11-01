@@ -4,10 +4,14 @@ export const errorCodes = [
   'incomplete_response','invalid_input','cancelled','busy','unsupported_page','site_permission','draft_changed',
 ] as const;
 export type ErrorCode = typeof errorCodes[number];
+export class HttpError extends Error {
+  constructor(code: ErrorCode, readonly status: number) { super(code); }
+}
 export function errorCode(error: unknown): ErrorCode {
   if (error instanceof Error) {
     for (const code of errorCodes) if (error.message === code) return code;
     if (error.name === 'AbortError') return 'cancelled';
+    if (error.name === 'SyntaxError') return 'invalid_response';
   }
   return 'network_error';
 }
