@@ -787,7 +787,7 @@
   "WriteProfileSaveError": "Could not save styles. Your edits remain here; check the fields and try again.",
   "WriteProfileSaved": "Saved on this device",
   "WriteSelectionUnavailable": "No readable selection. Your previous draft is kept; paste text or import the clipboard to continue.",
-  "WriteSelectionCaptured": "Selected text captured. Only Generate sends it to ChatGPT.",
+  "WriteSelectionCaptured": "Selected text captured. Only Generate processes it with the selected model.",
   "WriteRiskPending": "Check the flagged changes below the preview before copying or applying.",
   "WriteProvider": "Writing engine",
   "WriteProviderLocal": "Local model",

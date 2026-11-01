@@ -787,7 +787,7 @@
   "WriteProfileSaveError": "风格未能保存，编辑内容已保留，请检查填写内容后重试。",
   "WriteProfileSaved": "已保存到本机",
   "WriteSelectionUnavailable": "未读取到可用选区。已保留原草稿，可手动粘贴或导入剪贴板继续。",
-  "WriteSelectionCaptured": "已读取选中文字，点击生成后才会发送给 ChatGPT。",
+  "WriteSelectionCaptured": "已读取选中文字，点击生成后才会使用当前模型处理。",
   "WriteRiskPending": "请向下查看预览后的变化提示，确认后再复制或应用。",
   "WriteProvider": "写作引擎",
   "WriteProviderLocal": "本地模型",

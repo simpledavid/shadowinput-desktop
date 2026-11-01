@@ -63,10 +63,7 @@ func localModel(c *ui.Context, s *state.State, a state.Actions, t theme.Tokens, 
 		label = copy.WriteLocalChecking
 	}
 	if s.Compact {
-		ui.Row(c).AlignItems(ui.Center).Gap(8).Children(func() {
-			ui.Text(c, m.Text(label)).Grow(1).Wrap().FontSize(theme.Caption).TextColor(t.Muted)
-			kit.Button(c.Key("local-settings"), t, kit.Ghost, m.Text(copy.WriteExpand), !s.Busy).OnClick(a.OpenEditor)
-		})
+		ui.Text(c, m.Text(label)).Wrap().FontSize(theme.Caption).TextColor(t.Muted)
 		return
 	}
 	kit.Card(c, t).Padding(12).Children(func() {
