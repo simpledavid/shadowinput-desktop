@@ -30,7 +30,7 @@ credentials; it does not revoke the provider-side grant.
 - Strict TypeScript compilation, synthetic signed-token/transport tests, DOM
   reading/replacement tests, worker sender/callback ownership and ZIP build ran.
   Test output owns the current count; fixtures are not real inference evidence.
-- The user loaded the unpacked extension and reported a connection error after
+- In the initial attempt, the user loaded the extension and reported an error after
   completing OpenAI authorization and returning to the account page. This is a
   failed real acceptance attempt, not successful sign-in. The browser tool blocks
   both chrome://extensions and extension pages, so their UI requires user checks.
@@ -45,8 +45,11 @@ credentials; it does not revoke the provider-side grant.
   fixed data URL. The default account transport now binds fetch to the global
   receiver, covered by a failing-then-passing regression. This browser-runtime
   reproduction does not itself establish successful OpenAI inference.
-- Successful experimental callback reception, real account login/model listing/inference,
-  browser restart/refresh/logout and live-page compatibility remain unverified.
+- After the fetch-receiver fix, a user-provided screenshot showed the connected
+  account and an authorized model in both the workbench and popup. Real sign-in
+  and model discovery now have manual evidence; completed translation is pending.
+- Completed real translation, browser restart/token rotation/logout and live-page
+  compatibility remain unverified.
   Desktop OAuth acceptance does not validate the extension.
 - Crapper, Dryer and Mutator are not installed/integrated and were not run.
   No CRAP, duplication or mutation score is claimed.

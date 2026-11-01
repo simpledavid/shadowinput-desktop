@@ -50,5 +50,6 @@ pnpm extension:build
 
 Generated ZIP/unpacked files are in ignored `dist/`. TypeScript emits local
 extension modules; esbuild bundles the isolated content script. No remote scripts
-or runtime framework dependencies are loaded. SI assets reuse the approved desktop
-brand from `9a87ac5fa21adca301fbedcd8b6cb98a0bb522e2`.
+or runtime framework dependencies are loaded. SI PNG assets are transparent exports
+of [the shared rounded SI vector](../shadowinput-site/public/favicon.svg), preserving
+alpha at the corners. In-page branding uses the large export for high-density screens.
