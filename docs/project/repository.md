@@ -1,5 +1,9 @@
 # Repository and ownership
 
+The standalone [browser extension](shadowinput-extension.md) lives in
+`apps/extension`, with TypeScript MV3 UI/worker/content adapters and no desktop
+dependency. It follows [ADR 037](../decisions/037-standalone-browser-extension.md).
+
 ## Workspace
 
 | Path | Owner and dependency boundary |

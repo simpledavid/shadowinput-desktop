@@ -4,6 +4,9 @@
 
 [English](README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
+独立的 [shadowinput Chrome 插件](docs/project/shadowinput-extension.md)提供双语阅读、划词和输入框翻译。
+当前为 ZIP 实验预览版，真实浏览器授权与推理仍待验证，不需要安装桌面端。
+
 - 本地 Qwen3.5-2B Q4_K_M：首次主动下载约 1.28 GB 模型，之后可离线启动，无需登录或 API Key。
 - 原生桌面编辑器，支持润色、翻译、改写和续写。
 - 使用 ChatGPT 登录并申请使用符合条件的套餐额度；凭据在本地加密保存，模型来自账户授权列表。

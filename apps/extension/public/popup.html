@@ -1,0 +1,12 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>shadowinput</title><link rel="stylesheet" href="theme.css"><link rel="stylesheet" href="popup.css"></head><body>
+<main><header><div class="brand"><img src="icons/icon-32.png" width="28" height="28" alt="">shadowinput</div><span class="eyebrow" data-copy="preview"></span></header>
+<p class="tagline" data-copy="title"></p>
+<button id="connect" class="primary" data-copy="connect"></button>
+<section hidden>
+  <div class="selectors"><label><span data-copy="target"></span><select id="target"><option value="zh-CN"></option><option value="en"></option><option value="ja"></option></select></label><label><span data-copy="model"></span><select id="model"></select></label></div>
+  <div class="reading-actions"><button class="primary" data-action="toggle" data-copy="page"></button><button data-action="selection" data-copy="selection"></button><button data-action="input" data-copy="input"></button><button data-action="hover" data-copy="hover"></button></div>
+  <div class="site-setting"><label><input type="checkbox" id="automatic"><span data-copy="auto"></span></label><p id="host"></p><small data-copy="autoHint"></small></div>
+</section>
+<p role="status" class="error"></p>
+<button id="settings" class="settings-button" data-copy="settings"></button>
+</main><script type="module" src="app/popup.js"></script></body></html>
