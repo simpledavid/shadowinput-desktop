@@ -51,6 +51,15 @@ credentials; it does not revoke the provider-side grant.
 - Completed real translation, browser restart/token rotation/logout and live-page
   compatibility remain unverified.
   Desktop OAuth acceptance does not validate the extension.
+- A later real page attempt displayed the generic incomplete-translation error.
+  The screenshot does not identify the provider's underlying cause. Regression
+  tests reproduced two defects: completed output without deltas was discarded,
+  and stream failures (including plan limits) lost their actual category. The
+  parser now uses final message output only at `response.completed`, and the
+  webpage card retains allowlisted failure reasons across the worker boundary.
+  Unknown raw messages/codes are not exposed. A real retry is still required.
+  Protocol references: [inference completion](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference)
+  and [structured recovery](https://developers.openai.com/siwc/token-sharing-open-source/errors-and-recovery).
 - Pre-merge review reproduced and fixed three regressions: an old model request
   could clear a newer login, the popup enabled page actions on unsupported pages,
   and closing the text workbench left its translation running. Worker and DOM
