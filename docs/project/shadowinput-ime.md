@@ -12,6 +12,14 @@
 
 这一版的输入候选只做同义润色，不自动发送聊天、不读取整篇文档。翻译、改写、续写和完整差异审阅仍在“长文写作工具”中。AI 行不占用普通候选的数字槽位；未采纳的 AI 文本不写入用户词库。
 
+## 错误恢复和更新
+
+- 个人风格读取失败时，输入法设置、写作页和个人风格页显示同一错误和重试入口；不覆盖异常文件。
+- ChatGPT 候选请求遇到授权或权限错误时，清除可用账户/模型状态并暂停自动候选，提示重新授权。已取消或旧账户、旧来源的错误不能覆盖当前状态。
+- Windows 安装前读取原生注册状态：首次安装和同版本修复使用 `install`，版本变化或迁移使用已有的 `update` 事务，传入之前的构建指纹并保留底层回滚机制；无法确认状态时不修改注册。
+- Windows 每个候选请求独立持有取消状态。继续输入或结束组合会撤销旧请求；WinHTTP 使用异步请求，由工作线程取消连接，旧完成事件不能清除新请求。回调完全结束前保留其缓冲区和 DLL 引用。
+- macOS 菜单使用透明镂空 SI 模板，由系统决定黑白颜色；应用、安装包和官网保留黄色品牌图标。菜单资源名包含内容指纹，父输入源和子模式都声明模板属性。
+
 ## 隐私和隔离
 
 AI 默认关闭。ChatGPT 模式开启后，当前尚未上屏的组合短句、所选风格和相关词表会发送给 OpenAI，并消耗授权套餐用量。本地模式使用已经下载并启动的 Qwen 模型。服务只监听随机的 `127.0.0.1` 端口，使用每次启动随机生成的令牌；拒绝浏览器来源请求，限制输入及结果长度，不持久化候选或输入日志。关闭 AI 会移除发现文件并取消当前请求。风险检查是启发式过滤，不保证识别所有语义变化。
@@ -26,6 +34,7 @@ macOS 注册标识为 `org.shadowinput.inputmethod.shadowinput`，模式为 `org
 node scripts/stage-keyboard-runtime.mjs
 node scripts/shadowinput.mjs build macos
 node scripts/test-shadowinput-ime.mjs
+node scripts/test-shadowinput-candidates.mjs
 node scripts/shadowinput.mjs check
 ```
 
@@ -38,6 +47,8 @@ SHADOWINPUT_CROSS_WINDOWS=1 CXX=x86_64-w64-mingw32-g++ CC=x86_64-w64-mingw32-gcc
 node scripts/shadowinput.mjs build windows
 ```
 
+`node scripts/test-shadowinput-candidates.mjs` 在主机运行候选状态测试，在 Windows 上还运行真实回环 HTTP 取消/成功响应测试。macOS 可加 `--cross-windows` 仅交叉编译这个 Windows 测试，不能将其记为运行通过。`node scripts/shadowinput.mjs check` 已包含主机候选状态测试、Go 回归测试和静态检查。
+
 脚本只用主机 deployer 编译词库，不运行 Windows 二进制。构建脚本在隔离的暂存源码中替换产品注册标识，保留上游原生源文件及版权。包内包含 Rime/词库、Go 模块、Source Han Sans 和平台运行库的许可证。暂存资源清单和本机二进制不提交到源码仓库。
 
 ## 2026-11-01 验收记录
@@ -45,9 +56,12 @@ node scripts/shadowinput.mjs build windows
 - macOS 原生引擎和 NSTextView 测试通过：完整组合提取、旧修订拒绝、AI 文本只提交一次、提交后普通拼音继续工作、失去焦点后拒绝迟到结果。
 - 本地候选服务通过鉴权、浏览器来源拒绝、取消、关闭后拒绝旧令牌请求以及不合法候选过滤测试。
 - 一个真实 ChatGPT 账号在主程序中恢复了会话；合成短句请求返回过 HTTP 200 的完整候选，约 2.39 秒。这是服务请求证据，不是系统候选窗验收。
-- macOS 输入组件已复制并签名验证。用户报告点击系统“允许”后，新进程 TIS 查询仍返回 `ownCount: 0, available: false, selected: false`；系统设置中搜索 shadowinput 也没有结果。系统启用、选中、实际按键分发、可见 AI 行和 Tab 上屏尚未通过。主程序必须显示待启用，不能依据当前进程的注册返回值报告成功。
+- macOS 系统列表现已显示 shadowinput；用户截图及独立 TIS 查询确认组件已启用且可选中（`ownCount: 2, available: true, selected: true`）。本轮本机主程序和输入组件均已更新，旧包保留用于回退，原有账户恢复成功。真实编辑器中的完整拼音、AI 行和 Tab 上屏验收仍待完成。
 - Windows x64 TSF、主程序已交叉编译，PE 依赖闭包经过检查。没有 Windows 真机的安装、切换、输入、候选窗口、升级和卸载验收结果。
 
-macOS 下一步是在用户保存工作、主动注销并重新登录后复查系统列表。注销不是已证实的修复，不自动执行、不修改 HIToolbox 偏好、不重启系统输入代理，也不替换其他输入法。若登录后仍不可见，需要继续定位系统注册问题。此门槛通过前不替换官网现有安装包。
+- 本轮先复现再修复：配置错误在输入法页被隐藏、401/403 后账户仍可用、迟到错误覆盖新来源、Windows 跨版本安装被拒绝，以及编辑后旧候选请求没有取消。对应回归测试现已通过。
+- 项目检查、macOS 原生输入夹具、候选状态测试及双端构建通过；Windows WinHTTP 夹具仅交叉编译，没有真机执行结果。Crapper、Dryer、Mutator 未接入或运行，不声称达到相关指标。
+
+不自动注销、不修改 HIToolbox 偏好或替换其他输入法。图标更新后若新进程的 TIS 图标 URL 已指向新文件，而菜单仍显示旧图案，属于菜单界面缓存；不要据此反复改变图案或重新安装。系统端到端输入验收通过前不替换官网现有安装包。
 
 Windows 仍需检查不同缩放、浏览器/Office/记事本、安全输入框、快速换焦点和停用/卸载。AI 行服从原生候选 UI 的显示限制；屏幕阅读器及编辑器自绘 TSF UI 的 AI 候选能力尚未验收。自动候选请求会消耗套餐用量，长期输入的性能与用量也需要实机观察。
